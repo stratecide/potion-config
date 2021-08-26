@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.stratecide.potion_config.mixin",
+  "compatibilityLevel": "JAVA_16",
+  "mixins": [
+  ],
+  "client": [
+    "BrewingRecipeRegistryMixin",
+    "BrewingStandBlockEntityMixin",
+    "BrewingStandScreenHandlerMixin",
+    "PotionItemMixin",
+    "PotionUtilMixin",
+    "RegistryMixin",
+    "TippedArrowItemMixin",
+    "TippedArrowRecipeMixin",
+    "WanderingTraderEntityMixin",
+    "WitchEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

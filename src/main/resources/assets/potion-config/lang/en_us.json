@@ -1,0 +1,18 @@
+{
+  "potion-config.ingredients": "(%s + %s)",
+  "item.minecraft.potion.effect.normal-water": "Water Bottle",
+  "item.minecraft.splash_potion.effect.splash-water": "Splash Water Bottle",
+  "item.minecraft.lingering_potion.effect.lingering-water": "Lingering Water Bottle",
+  "item.minecraft.potion.effect.normal-awkward": "Awkward Potion",
+  "item.minecraft.splash_potion.effect.normal-awkward": "Awkward Splash Potion",
+  "item.minecraft.lingering_potion.effect.normal-awkward": "Awkward Lingering Potion",
+  "item.minecraft.potion.effect.normal-mundane": "Mundane Potion",
+  "item.minecraft.splash_potion.effect.normal-mundane": "Mundane Splash Potion",
+  "item.minecraft.lingering_potion.effect.normal-mundane": "Mundane Lingering Potion",
+  "item.minecraft.potion.effect.normal-thick": "Thick Potion",
+  "item.minecraft.splash_potion.effect.normal-thick": "Thick Splash Potion",
+  "item.minecraft.lingering_potion.effect.normal-thick": "Thick Lingering Potion",
+  "item.minecraft.potion.effect.normal-swiftness": "Potion of Swiftness",
+  "item.minecraft.splash_potion.effect.normal-swiftness": "Splash Potion of Swiftness",
+  "item.minecraft.lingering_potion.effect.normal-swiftness": "Lingering Potion of Swiftness"
+}
