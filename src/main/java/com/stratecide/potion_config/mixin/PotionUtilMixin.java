@@ -3,6 +3,7 @@ package com.stratecide.potion_config.mixin;
 import com.stratecide.potion_config.ModdedBrewingRecipeRegistry;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
@@ -35,6 +36,9 @@ public abstract class PotionUtilMixin {
     @Inject(method = "buildTooltip", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0))
     private static void injectToolTip(ItemStack stack, List<Text> list, float f, CallbackInfo ci) {
         Potion potion = PotionUtil.getPotion(stack);
-        ModdedBrewingRecipeRegistry.ingredientTooltip(potion, list);
+        if (stack.isOf(Items.TIPPED_ARROW))
+            ModdedBrewingRecipeRegistry.arrowIngredientTooltip(potion, list);
+        else
+            ModdedBrewingRecipeRegistry.ingredientTooltip(potion, list);
     }
 }

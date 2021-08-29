@@ -67,6 +67,33 @@ public class ModdedBrewingRecipeRegistry {
         return null;
     }
 
+    public static void arrowIngredientTooltip(Potion outputPotion, List<Text> list) {
+        ensureRecipesParsed();
+        if (outputPotion == null || outputPotion == Potions.EMPTY)
+            return;
+        for (ArrowRecipe recipe : ARROW_RECIPES) {
+            for (Identifier inputId : Registry.POTION.getIds()) {
+                String potionId = inputId.getPath();
+                if (potionId.matches(recipe.inputPotionPattern)) {
+                    Potion potion = generateOutputPotion(recipe.inputPotionPattern, recipe.outputPotionPattern, potionId);
+                    if (potion == outputPotion) {
+                        Potion inputPotion = Registry.POTION.get(inputId);
+                        Item pot = Items.POTION;
+                        if (PotionConfigMod.SPLASH_POTIONS.contains(inputPotion))
+                            pot = Items.SPLASH_POTION;
+                        else if (PotionConfigMod.LINGERING_POTIONS.contains(inputPotion))
+                            pot = Items.LINGERING_POTION;
+                        ItemStack potionStack = PotionUtil.setPotion(pot.getDefaultStack(), inputPotion);
+                        TranslatableText mutableText = new TranslatableText(Items.ARROW.getDefaultStack().getTranslationKey());
+                        mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
+                        list.add(mutableText.formatted(Formatting.DARK_GRAY));
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     public static void ingredientTooltip(Potion outputPotion, List<Text> list) {
         ensureRecipesParsed();
         if (outputPotion == null || outputPotion == Potions.EMPTY)

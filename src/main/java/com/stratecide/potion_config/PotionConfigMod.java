@@ -63,6 +63,10 @@ public class PotionConfigMod implements ModInitializer {
 			}
 			List<StatusEffect> effects = new ArrayList<>();
 			List<Integer> amplifiers = new ArrayList<>();
+			List<Double> normalDurations = new ArrayList<>();
+			List<Double> splashDurations = new ArrayList<>();
+			List<Double> lingeringDurations = new ArrayList<>();
+			List<Double> arrowDurations = new ArrayList<>();
 			for (Iterator<JsonElement> it2 = entry.getAsJsonArray("effects").iterator(); it2.hasNext(); ) {
 				JsonObject effect = it2.next().getAsJsonObject();
 				int amplifier = 0;
@@ -73,15 +77,23 @@ public class PotionConfigMod implements ModInitializer {
 					throw new NullPointerException("Status Effect not found for ID '" + effect.get("effect").getAsString() + "'");
 				effects.add(statusEffect);
 				amplifiers.add(amplifier);
+				if (entry.has("duration"))
+					normalDurations.add(effect.has("duration") ? effect.get("duration").getAsDouble() : entry.get("duration").getAsDouble());
+				if (entry.has("splash"))
+					splashDurations.add(effect.has("splash") ? effect.get("splash").getAsDouble() : entry.get("splash").getAsDouble());
+				if (entry.has("lingering"))
+					lingeringDurations.add(effect.has("lingering") ? effect.get("lingering").getAsDouble() : entry.get("lingering").getAsDouble());
+				if (entry.has("arrow"))
+					arrowDurations.add(effect.has("arrow") ? effect.get("arrow").getAsDouble() : entry.get("arrow").getAsDouble());
 			}
 			if (entry.has("duration"))
-				NORMAL_POTIONS.add(registerPotion("normal-" + potionId,  effects, amplifiers, Math.max(1, (int) Math.round(entry.get("duration").getAsDouble() * 20))));
+				NORMAL_POTIONS.add(registerPotion("normal-" + potionId,  effects, amplifiers, normalDurations));
 			if (entry.has("splash"))
-				SPLASH_POTIONS.add(registerSplashPotion(potionId, effects, amplifiers, Math.max(1, (int) Math.round(entry.get("splash").getAsDouble() * 20))));
+				SPLASH_POTIONS.add(registerSplashPotion(potionId, effects, amplifiers, splashDurations));
 			if (entry.has("lingering"))
-				LINGERING_POTIONS.add(registerLingeringPotion(potionId, effects, amplifiers, Math.max(1, (int) Math.round(entry.get("lingering").getAsDouble() * 80))));
+				LINGERING_POTIONS.add(registerLingeringPotion(potionId, effects, amplifiers, lingeringDurations));
 			if (entry.has("arrow"))
-				ARROW_POTIONS.add(registerTippedArrow(potionId, effects, amplifiers, Math.max(1, (int) Math.round(entry.get("arrow").getAsDouble() * 160))));
+				ARROW_POTIONS.add(registerTippedArrow(potionId, effects, amplifiers, arrowDurations));
 		}
 
 		Potion waterPotion = Registry.POTION.get(new Identifier(MOD_ID, "normal-water"));
@@ -106,28 +118,28 @@ public class PotionConfigMod implements ModInitializer {
 			throw new NullPointerException("Potion not found for wandering trader");
 	}
 
-	private static StatusEffectInstance[] createStatusEffects(List<StatusEffect> effects, List<Integer> amplifiers, int duration) {
+	private static StatusEffectInstance[] createStatusEffects(List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
 		assert effects.size() == amplifiers.size();
 		StatusEffectInstance[] result = new StatusEffectInstance[effects.size()];
 		for (int i = 0; i < result.length; i++) {
 			StatusEffect effect = effects.get(i);
-			result[i] = new StatusEffectInstance(effect, effect.isInstant() ? 1 : duration, amplifiers.get(i));
+			result[i] = new StatusEffectInstance(effect, effect.isInstant() ? 1 : Math.max(1, (int) Math.round(durations.get(i) * 20)), amplifiers.get(i));
 		}
 		return result;
 	}
 
-	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, int duration) {
-		Potion potion = new Potion(createStatusEffects(effects, amplifiers, duration));
+	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+		Potion potion = new Potion(createStatusEffects(effects, amplifiers, durations));
 		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, new Identifier(MOD_ID, id)), potion, Lifecycle.stable());
 	}
-	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, int duration) {
-		return registerPotion("splash-" + id, effects, amplifiers, duration);
+	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+		return registerPotion("splash-" + id, effects, amplifiers, durations);
 	}
-	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, int duration) {
-		return registerPotion("lingering-" + id, effects, amplifiers, duration);
+	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+		return registerPotion("lingering-" + id, effects, amplifiers, durations);
 	}
-	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, int duration) {
-		return registerPotion("arrow-" + id, effects, amplifiers, duration);
+	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+		return registerPotion("arrow-" + id, effects, amplifiers, durations);
 	}
 
 	@Override
@@ -179,11 +191,18 @@ public class PotionConfigMod implements ModInitializer {
 				}
 			});
 		}
+
+		for (Identifier identifier : MOD_COMPAT.values()) {
+			if (Registry.POTION.get(identifier) == Potions.EMPTY)
+				throw new AssertionError("no Item found in registry for fuel type '" + identifier.getPath() + "'");
+		}
 	}
 
 	public static void replaceModdedPotion(Identifier originalId, Potion moddedPotion) {
-		if (!config.has("replace") || !config.get("replace").getAsJsonObject().has(originalId.toString()))
+		if (!config.has("replace") || !config.get("replace").getAsJsonObject().has(originalId.toString())) {
+			System.out.println("(Potion-Config) WARNING: no replacement configured for modded Potion: " + originalId);
 			return;
+		}
 		String replacementId = config.get("replace").getAsJsonObject().get(originalId.toString()).getAsString();
 		Identifier replacement = new Identifier(MOD_ID, replacementId);
 		MOD_COMPAT.put(moddedPotion, replacement);
