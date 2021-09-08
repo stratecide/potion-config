@@ -71,6 +71,7 @@ public class ModdedBrewingRecipeRegistry {
         ensureRecipesParsed();
         if (outputPotion == null || outputPotion == Potions.EMPTY)
             return;
+        List<Text> options = new ArrayList<>();
         for (ArrowRecipe recipe : ARROW_RECIPES) {
             for (Identifier inputId : Registry.POTION.getIds()) {
                 String potionId = inputId.getPath();
@@ -86,18 +87,20 @@ public class ModdedBrewingRecipeRegistry {
                         ItemStack potionStack = PotionUtil.setPotion(pot.getDefaultStack(), inputPotion);
                         TranslatableText mutableText = new TranslatableText(Items.ARROW.getDefaultStack().getTranslationKey());
                         mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
-                        list.add(mutableText.formatted(Formatting.DARK_GRAY));
-                        return;
+                        options.add(mutableText.formatted(Formatting.DARK_GRAY));
                     }
                 }
             }
         }
+        if (options.size() > 0)
+            list.add(options.get((int) ((new Date().getTime() / PotionConfigMod.TOOLTIP_MILLISECONDS) % options.size())));
     }
 
     public static void ingredientTooltip(Potion outputPotion, List<Text> list) {
         ensureRecipesParsed();
         if (outputPotion == null || outputPotion == Potions.EMPTY)
             return;
+        List<Text> options = new ArrayList<>();
         for (Recipe recipe : RECIPES) {
             for (Identifier inputId : Registry.POTION.getIds()) {
                 String potionId = inputId.getPath();
@@ -112,15 +115,17 @@ public class ModdedBrewingRecipeRegistry {
                             pot = Items.LINGERING_POTION;
                         ItemStack potionStack = PotionUtil.setPotion(pot.getDefaultStack(), inputPotion);
                         ItemStack[] ingredients = recipe.ingredient.getMatchingStacks();
-                        ItemStack ingredient = ingredients[(int) ((new Date().getTime() / 1000) % ingredients.length)];
-                        TranslatableText mutableText = new TranslatableText(ingredient.getTranslationKey());
-                        mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
-                        list.add(mutableText.formatted(Formatting.DARK_GRAY));
-                        return;
+                        for (ItemStack ingredient : ingredients) {
+                            TranslatableText mutableText = new TranslatableText(ingredient.getTranslationKey());
+                            mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
+                            options.add(mutableText.formatted(Formatting.DARK_GRAY));
+                        }
                     }
                 }
             }
         }
+        if (options.size() > 0)
+            list.add(options.get((int) ((new Date().getTime() / PotionConfigMod.TOOLTIP_MILLISECONDS) % options.size())));
     }
 
     private static Potion generateOutputPotion(String inputPattern, String outputPattern, String inputPotionId) {

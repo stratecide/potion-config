@@ -44,6 +44,8 @@ public class PotionConfigMod implements ModInitializer {
 	public static final Potion WANDERING_TRADER_POTION;
 	public static final Map<Potion, Identifier> MOD_COMPAT = new HashMap<>();
 
+	public static int TOOLTIP_MILLISECONDS = 2000;
+
 	public static final Potion WATER_POTION;
 	public static final Set<Potion> NORMAL_POTIONS = new HashSet<>();
 	public static final Set<Potion> SPLASH_POTIONS = new HashSet<>();
