@@ -6,6 +6,8 @@
   "mixins": [
   ],
   "client": [
+    "AreaEffectCloudEntityMixin",
+    "ArrowEntityMixin",
     "BrewingRecipeRegistryMixin",
     "BrewingStandBlockEntityMixin",
     "BrewingStandScreenHandlerMixin",

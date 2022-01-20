@@ -39,7 +39,7 @@ public abstract class WitchEntityMixin {
             potionId = "poison";
         if (potion == Potions.WEAKNESS)
             potionId = "weakness";
-        Potion replacement = PotionConfigMod.WITCH_POTIONS.get("splash-" + potionId);
+        Potion replacement = PotionConfigMod.WITCH_POTIONS.get(PotionConfigMod.PREFIX_SPLASH + potionId);
         if (PotionConfigMod.LINGERING_POTIONS.contains(replacement))
             stack = new ItemStack(Items.SPLASH_POTION);
         return PotionUtil.setPotion(stack, replacement);

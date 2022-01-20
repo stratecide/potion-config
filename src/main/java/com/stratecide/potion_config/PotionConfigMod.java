@@ -15,6 +15,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
@@ -26,6 +27,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.event.GameEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,12 +39,29 @@ import java.util.Map.Entry;
 public class PotionConfigMod implements ModInitializer {
 
 	public static final String MOD_ID = "potion-config";
+	public static final String NBT_KEY = "PotionC";
+	public static final String PREFIX_NORMAL = "normal-";
+	public static final String PREFIX_SPLASH = "splash-";
+	public static final String PREFIX_LINGERING = "lingering-";
+	public static final String PREFIX_ARROW = "arrow-";
 
 	public static final Map<String, Integer> FUELS;
 	public static final Map<String, Potion> WITCH_POTIONS = new HashMap<>();
-	private static final Set<String> WITCH_POTION_IDS = ImmutableSet.of("normal-fire_resistance", "normal-water_breathing", "normal-healing", "normal-swiftness", "splash-harming", "splash-healing", "splash-poison", "splash-regeneration", "splash-slowness", "splash-weakness");
+	private static final Set<String> WITCH_POTION_IDS = ImmutableSet.of(
+		PREFIX_NORMAL + "fire_resistance",
+		PREFIX_NORMAL + "water_breathing",
+		PREFIX_NORMAL + "healing",
+		PREFIX_NORMAL + "swiftness",
+		PREFIX_SPLASH + "harming",
+		PREFIX_SPLASH + "healing",
+		PREFIX_SPLASH + "poison",
+		PREFIX_SPLASH + "regeneration",
+		PREFIX_SPLASH + "slowness",
+		PREFIX_SPLASH + "weakness"
+	);
 	public static final Potion WANDERING_TRADER_POTION;
 	public static final Map<Potion, Identifier> MOD_COMPAT = new HashMap<>();
+	public static final Map<Identifier, Identifier> CUSTOM_TO_VANILLA = new HashMap<>();
 
 	public static int TOOLTIP_MILLISECONDS = 2000;
 
@@ -62,6 +81,10 @@ public class PotionConfigMod implements ModInitializer {
 			String potionId = entry.get("id").getAsString();
 			if (!entry.has("duration") && !entry.has("splash") && !entry.has("lingering") && !entry.has("arrow")) {
 				throw new AssertionError("no duration was given for potion: " + potionId);
+			}
+			Identifier vanillaId = null;
+			if (entry.has("vanilla")) {
+				vanillaId = Identifier.tryParse(entry.get("vanilla").getAsString());
 			}
 			List<StatusEffect> effects = new ArrayList<>();
 			List<Integer> amplifiers = new ArrayList<>();
@@ -84,24 +107,25 @@ public class PotionConfigMod implements ModInitializer {
 				if (entry.has("splash"))
 					splashDurations.add(effect.has("splash") ? effect.get("splash").getAsDouble() : entry.get("splash").getAsDouble());
 				if (entry.has("lingering"))
-					lingeringDurations.add(effect.has("lingering") ? effect.get("lingering").getAsDouble() : entry.get("lingering").getAsDouble());
+					lingeringDurations.add(4 * (effect.has("lingering") ? effect.get("lingering").getAsDouble() : entry.get("lingering").getAsDouble()));
 				if (entry.has("arrow"))
-					arrowDurations.add(effect.has("arrow") ? effect.get("arrow").getAsDouble() : entry.get("arrow").getAsDouble());
+					arrowDurations.add(8.0 * (effect.has("arrow") ? effect.get("arrow").getAsDouble() : entry.get("arrow").getAsDouble()));
 			}
 			if (entry.has("duration"))
-				NORMAL_POTIONS.add(registerPotion("normal-" + potionId,  effects, amplifiers, normalDurations));
+				NORMAL_POTIONS.add(registerPotion(PREFIX_NORMAL + potionId,  effects, amplifiers, normalDurations, vanillaId));
 			if (entry.has("splash"))
-				SPLASH_POTIONS.add(registerSplashPotion(potionId, effects, amplifiers, splashDurations));
+				SPLASH_POTIONS.add(registerSplashPotion(potionId, effects, amplifiers, splashDurations, vanillaId));
 			if (entry.has("lingering"))
-				LINGERING_POTIONS.add(registerLingeringPotion(potionId, effects, amplifiers, lingeringDurations));
+				LINGERING_POTIONS.add(registerLingeringPotion(potionId, effects, amplifiers, lingeringDurations, vanillaId));
 			if (entry.has("arrow"))
-				ARROW_POTIONS.add(registerTippedArrow(potionId, effects, amplifiers, arrowDurations));
+				ARROW_POTIONS.add(registerTippedArrow(potionId, effects, amplifiers, arrowDurations, vanillaId));
 		}
 
-		Potion waterPotion = Registry.POTION.get(new Identifier(MOD_ID, "normal-water"));
+		Potion waterPotion = Registry.POTION.get(new Identifier(MOD_ID, PREFIX_NORMAL + "water"));
 		if (waterPotion == Potions.EMPTY)
-			NORMAL_POTIONS.add(waterPotion = Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, new Identifier(MOD_ID, "normal-water")), new Potion(), Lifecycle.stable()));
+			NORMAL_POTIONS.add(waterPotion = Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, new Identifier(MOD_ID, PREFIX_NORMAL + "water")), new Potion(), Lifecycle.stable()));
 		WATER_POTION = waterPotion;
+		CUSTOM_TO_VANILLA.put(new Identifier(MOD_ID, PREFIX_NORMAL + "water"), new Identifier("water"));
 
 		if (config.has("fuel") && config.get("fuel").isJsonObject()) {
 			FUELS = new HashMap<>();
@@ -130,18 +154,22 @@ public class PotionConfigMod implements ModInitializer {
 		return result;
 	}
 
-	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
 		Potion potion = new Potion(createStatusEffects(effects, amplifiers, durations));
-		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, new Identifier(MOD_ID, id)), potion, Lifecycle.stable());
+		Identifier identifier = new Identifier(MOD_ID, id);
+		if (vanillaId != null) {
+			CUSTOM_TO_VANILLA.put(identifier, vanillaId);
+		}
+		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, identifier), potion, Lifecycle.stable());
 	}
-	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
-		return registerPotion("splash-" + id, effects, amplifiers, durations);
+	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_SPLASH + id, effects, amplifiers, durations, vanillaId);
 	}
-	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
-		return registerPotion("lingering-" + id, effects, amplifiers, durations);
+	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_LINGERING + id, effects, amplifiers, durations, vanillaId);
 	}
-	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
-		return registerPotion("arrow-" + id, effects, amplifiers, durations);
+	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_ARROW + id, effects, amplifiers, durations, vanillaId);
 	}
 
 	@Override
@@ -196,7 +224,7 @@ public class PotionConfigMod implements ModInitializer {
 
 		for (Identifier identifier : MOD_COMPAT.values()) {
 			if (Registry.POTION.get(identifier) == Potions.EMPTY)
-				throw new AssertionError("no Item found in registry for fuel type '" + identifier.getPath() + "'");
+				throw new AssertionError("no Item found in registry for potion type '" + identifier.toString() + "'");
 		}
 	}
 
@@ -208,6 +236,38 @@ public class PotionConfigMod implements ModInitializer {
 		String replacementId = config.get("replace").getAsJsonObject().get(originalId.toString()).getAsString();
 		Identifier replacement = new Identifier(MOD_ID, replacementId);
 		MOD_COMPAT.put(moddedPotion, replacement);
+		CUSTOM_TO_VANILLA.put(replacement, originalId);
+	}
+
+	public static Potion findCustomPotionFromStack(ItemStack stack) {
+        String prefix = null;
+        if (stack.isOf(Items.POTION))
+            prefix = PotionConfigMod.PREFIX_NORMAL;
+        else if (stack.isOf(Items.SPLASH_POTION))
+            prefix = PotionConfigMod.PREFIX_SPLASH;
+        else if (stack.isOf(Items.LINGERING_POTION))
+            prefix = PotionConfigMod.PREFIX_LINGERING;
+        else if (stack.isOf(Items.TIPPED_ARROW))
+            prefix = PotionConfigMod.PREFIX_ARROW;
+		return findCustomPotionFromNbt(stack.getNbt(), prefix);
+	}
+	public static Potion findCustomPotionFromNbt(@Nullable NbtCompound compound, @Nullable String prefix) {
+		if (compound == null) {
+			return Potions.EMPTY;
+		}
+		Potion potion = Potion.byId(compound.getString(PotionConfigMod.NBT_KEY));
+		if (Potions.EMPTY == potion) {
+			Identifier identifier = Identifier.tryParse(compound.getString(PotionUtil.POTION_KEY));
+			for (Identifier key : PotionConfigMod.CUSTOM_TO_VANILLA.keySet())
+				if (PotionConfigMod.CUSTOM_TO_VANILLA.get(key).equals(identifier)) {
+					if (prefix == null || key.getPath().startsWith(prefix)) {
+						identifier = key;
+						break;
+					}
+				}
+			potion = Registry.POTION.get(identifier);
+		}
+		return potion;
 	}
 
 	private static JsonObject loadConfig() {
@@ -234,7 +294,7 @@ public class PotionConfigMod implements ModInitializer {
 				data = DEFAULT_CONFIG;
 			}
 		}
-		return new JsonParser().parse(data).getAsJsonObject();
+		return JsonParser.parseString(data).getAsJsonObject();
 	}
 
 	private static final String CONFIG_FILE = "config/potion-config.json";
@@ -243,6 +303,7 @@ public class PotionConfigMod implements ModInitializer {
 	"potions": [
 		{
 			"id": "water",
+			"vanilla": "water",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -251,6 +312,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "mundane",
+			"vanilla": "mundane",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -259,6 +321,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "thick",
+			"vanilla": "thick",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -267,6 +330,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "awkward",
+			"vanilla": "awkward",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -275,6 +339,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "night_vision",
+			"vanilla": "night_vision",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -287,6 +352,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_night_vision",
+			"vanilla": "long_night_vision",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -299,6 +365,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "invisibility",
+			"vanilla": "invisibility",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -311,6 +378,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_invisibility",
+			"vanilla": "long_invisibility",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -323,6 +391,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "leaping",
+			"vanilla": "leaping",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -335,6 +404,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_leaping",
+			"vanilla": "long_leaping",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -347,6 +417,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_leaping",
+			"vanilla": "strong_leaping",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -360,6 +431,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "fire_resistance",
+			"vanilla": "fire_resistance",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -372,6 +444,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_fire_resistance",
+			"vanilla": "long_fire_resistance",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -384,6 +457,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "swiftness",
+			"vanilla": "swiftness",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -396,6 +470,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_swiftness",
+			"vanilla": "long_swiftness",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -408,6 +483,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_swiftness",
+			"vanilla": "strong_swiftness",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -421,6 +497,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "slowness",
+			"vanilla": "slowness",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -433,6 +510,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "slow_slowness",
+			"vanilla": "slow_slowness",
 			"duration": 240,
 			"splash": 240,
 			"lingering": 60,
@@ -445,6 +523,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_slowness",
+			"vanilla": "strong_slowness",
 			"duration": 20,
 			"splash": 20,
 			"lingering": 5,
@@ -458,6 +537,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "turtle_master",
+			"vanilla": "turtle_master",
 			"duration": 20,
 			"splash": 20,
 			"lingering": 5,
@@ -475,6 +555,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_turtle_master",
+			"vanilla": "long_turtle_master",
 			"duration": 40,
 			"splash": 40,
 			"lingering": 10,
@@ -492,6 +573,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_turtle_master",
+			"vanilla": "strong_turtle_master",
 			"duration": 20,
 			"splash": 20,
 			"lingering": 5,
@@ -509,6 +591,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "water_breathing",
+			"vanilla": "water_breathing",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -521,6 +604,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_water_breathing",
+			"vanilla": "long_water_breathing",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -533,6 +617,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "healing",
+			"vanilla": "healing",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -545,6 +630,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_healing",
+			"vanilla": "strong_healing",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -558,6 +644,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "harming",
+			"vanilla": "harming",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -570,6 +657,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_harming",
+			"vanilla": "strong_harming",
 			"duration": 0,
 			"splash": 0,
 			"lingering": 0,
@@ -583,6 +671,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "poison",
+			"vanilla": "poison",
 			"duration": 45,
 			"splash": 45,
 			"lingering": 11.25,
@@ -595,6 +684,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_poison",
+			"vanilla": "long_poison",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -607,6 +697,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_poison",
+			"vanilla": "strong_poison",
 			"duration": 21.6,
 			"splash": 21.6,
 			"lingering": 5.4,
@@ -620,6 +711,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "regeneration",
+			"vanilla": "regeneration",
 			"duration": 45,
 			"splash": 45,
 			"lingering": 11.25,
@@ -632,6 +724,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_regeneration",
+			"vanilla": "long_regeneration",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -644,6 +737,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_regeneration",
+			"vanilla": "strong_regeneration",
 			"duration": 22.5,
 			"splash": 22.5,
 			"lingering": 5.6,
@@ -657,6 +751,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strength",
+			"vanilla": "strength",
 			"duration": 180,
 			"splash": 180,
 			"lingering": 45,
@@ -669,6 +764,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_strength",
+			"vanilla": "long_strength",
 			"duration": 480,
 			"splash": 480,
 			"lingering": 120,
@@ -681,6 +777,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "strong_strength",
+			"vanilla": "strong_strength",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -694,6 +791,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "weakness",
+			"vanilla": "weakness",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -706,6 +804,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_weakness",
+			"vanilla": "long_weakness",
 			"duration": 240,
 			"splash": 240,
 			"lingering": 60,
@@ -718,6 +817,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "slow_falling",
+			"vanilla": "slow_falling",
 			"duration": 90,
 			"splash": 90,
 			"lingering": 22.5,
@@ -730,6 +830,7 @@ public class PotionConfigMod implements ModInitializer {
 		},
 		{
 			"id": "long_slow_falling",
+			"vanilla": "long_slow_falling",
 			"duration": 240,
 			"splash": 240,
 			"lingering": 60,

@@ -1,11 +1,9 @@
 package com.stratecide.potion_config.mixin;
 
-import com.mojang.serialization.Lifecycle;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
