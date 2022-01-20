@@ -64,6 +64,8 @@ public class PotionConfigMod implements ModInitializer {
 	public static final Map<Identifier, Identifier> CUSTOM_TO_VANILLA = new HashMap<>();
 
 	public static int TOOLTIP_MILLISECONDS = 2000;
+	public static int STACK_SIZE = 1;
+	public static boolean GLINT = false;
 
 	public static final Potion WATER_POTION;
 	public static final Set<Potion> NORMAL_POTIONS = new HashSet<>();
@@ -75,6 +77,11 @@ public class PotionConfigMod implements ModInitializer {
 
 	static  {
 		config = loadConfig();
+
+		if (config.has("stack_size"))
+			STACK_SIZE = config.get("stack_size").getAsInt();
+		if (config.has("glint"))
+			GLINT = config.get("glint").getAsBoolean();
 
 		for (Iterator<JsonElement> it = config.get("potions").getAsJsonArray().iterator(); it.hasNext(); ) {
 			JsonObject entry = it.next().getAsJsonObject();
@@ -300,6 +307,8 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String CONFIG_FILE = "config/potion-config.json";
 	private static final String DEFAULT_CONFIG = """
 {
+	"stack_size": 1,
+	"glint": false,
 	"potions": [
 		{
 			"id": "water",

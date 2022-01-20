@@ -11,6 +11,7 @@
     "BrewingRecipeRegistryMixin",
     "BrewingStandBlockEntityMixin",
     "BrewingStandScreenHandlerMixin",
+    "ItemsMixin",
     "PotionItemMixin",
     "PotionUtilMixin",
     "RegistryMixin",
