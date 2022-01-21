@@ -66,6 +66,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static int TOOLTIP_MILLISECONDS = 2000;
 	public static int STACK_SIZE = 1;
 	public static boolean GLINT = false;
+	public static double BURST_CHANCE = 0;
 
 	public static final Potion WATER_POTION;
 	public static final Set<Potion> NORMAL_POTIONS = new HashSet<>();
@@ -82,6 +83,8 @@ public class PotionConfigMod implements ModInitializer {
 			STACK_SIZE = config.get("stack_size").getAsInt();
 		if (config.has("glint"))
 			GLINT = config.get("glint").getAsBoolean();
+		if (config.has("burst_chance"))
+			BURST_CHANCE = config.get("burst_chance").getAsDouble();
 
 		for (Iterator<JsonElement> it = config.get("potions").getAsJsonArray().iterator(); it.hasNext(); ) {
 			JsonObject entry = it.next().getAsJsonObject();
@@ -309,6 +312,7 @@ public class PotionConfigMod implements ModInitializer {
 {
 	"stack_size": 1,
 	"glint": false,
+	"burst_chance": 0.0,
 	"potions": [
 		{
 			"id": "water",

@@ -12,6 +12,8 @@
     "BrewingStandBlockEntityMixin",
     "BrewingStandScreenHandlerMixin",
     "ItemsMixin",
+    "PlayerEntityMixin",
+    "PotionEntityInvoker",
     "PotionItemMixin",
     "PotionUtilMixin",
     "RegistryMixin",
