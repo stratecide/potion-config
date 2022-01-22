@@ -59,7 +59,6 @@ public class PotionConfigMod implements ModInitializer {
 		PREFIX_SPLASH + "slowness",
 		PREFIX_SPLASH + "weakness"
 	);
-	public static final Potion WANDERING_TRADER_POTION;
 	public static final Map<Potion, Identifier> MOD_COMPAT = new HashMap<>();
 	public static final Map<Identifier, Identifier> CUSTOM_TO_VANILLA = new HashMap<>();
 
@@ -68,7 +67,9 @@ public class PotionConfigMod implements ModInitializer {
 	public static boolean GLINT = false;
 	public static double BURST_CHANCE = 0;
 
-	public static final Potion WATER_POTION;
+	public static Potion WATER_POTION;
+	public static Potion WANDERING_TRADER_POTION;
+
 	public static final Set<Potion> NORMAL_POTIONS = new HashSet<>();
 	public static final Set<Potion> SPLASH_POTIONS = new HashSet<>();
 	public static final Set<Potion> LINGERING_POTIONS = new HashSet<>();
@@ -79,6 +80,43 @@ public class PotionConfigMod implements ModInitializer {
 	static  {
 		config = loadConfig();
 
+		if (config.has("fuel") && config.get("fuel").isJsonObject()) {
+			FUELS = new HashMap<>();
+		} else {
+			FUELS = null;
+		}
+	}
+
+	private static StatusEffectInstance[] createStatusEffects(List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
+		assert effects.size() == amplifiers.size();
+		StatusEffectInstance[] result = new StatusEffectInstance[effects.size()];
+		for (int i = 0; i < result.length; i++) {
+			StatusEffect effect = effects.get(i);
+			result[i] = new StatusEffectInstance(effect, effect.isInstant() ? 1 : Math.max(1, (int) Math.round(durations.get(i) * 20)), amplifiers.get(i));
+		}
+		return result;
+	}
+
+	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		Potion potion = new Potion(createStatusEffects(effects, amplifiers, durations));
+		Identifier identifier = new Identifier(MOD_ID, id);
+		if (vanillaId != null) {
+			CUSTOM_TO_VANILLA.put(identifier, vanillaId);
+		}
+		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, identifier), potion, Lifecycle.stable());
+	}
+	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_SPLASH + id, effects, amplifiers, durations, vanillaId);
+	}
+	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_LINGERING + id, effects, amplifiers, durations, vanillaId);
+	}
+	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
+		return registerPotion(PREFIX_ARROW + id, effects, amplifiers, durations, vanillaId);
+	}
+
+	@Override
+	public void onInitialize() {
 		if (config.has("stack_size"))
 			STACK_SIZE = config.get("stack_size").getAsInt();
 		if (config.has("glint"))
@@ -137,11 +175,6 @@ public class PotionConfigMod implements ModInitializer {
 		WATER_POTION = waterPotion;
 		CUSTOM_TO_VANILLA.put(new Identifier(MOD_ID, PREFIX_NORMAL + "water"), new Identifier("water"));
 
-		if (config.has("fuel") && config.get("fuel").isJsonObject()) {
-			FUELS = new HashMap<>();
-		} else {
-			FUELS = null;
-		}
 		JsonObject witch = config.get("witch").getAsJsonObject();
 		for (String id : WITCH_POTION_IDS) {
 			Potion potion = Registry.POTION.get(new Identifier(MOD_ID, witch.get(id).getAsString()));
@@ -152,38 +185,7 @@ public class PotionConfigMod implements ModInitializer {
 		WANDERING_TRADER_POTION = Registry.POTION.get(new Identifier(MOD_ID, config.get("wandering_trader_night").getAsString()));
 		if (WANDERING_TRADER_POTION == Potions.EMPTY)
 			throw new NullPointerException("Potion not found for wandering trader");
-	}
 
-	private static StatusEffectInstance[] createStatusEffects(List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
-		assert effects.size() == amplifiers.size();
-		StatusEffectInstance[] result = new StatusEffectInstance[effects.size()];
-		for (int i = 0; i < result.length; i++) {
-			StatusEffect effect = effects.get(i);
-			result[i] = new StatusEffectInstance(effect, effect.isInstant() ? 1 : Math.max(1, (int) Math.round(durations.get(i) * 20)), amplifiers.get(i));
-		}
-		return result;
-	}
-
-	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		Potion potion = new Potion(createStatusEffects(effects, amplifiers, durations));
-		Identifier identifier = new Identifier(MOD_ID, id);
-		if (vanillaId != null) {
-			CUSTOM_TO_VANILLA.put(identifier, vanillaId);
-		}
-		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, identifier), potion, Lifecycle.stable());
-	}
-	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_SPLASH + id, effects, amplifiers, durations, vanillaId);
-	}
-	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_LINGERING + id, effects, amplifiers, durations, vanillaId);
-	}
-	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_ARROW + id, effects, amplifiers, durations, vanillaId);
-	}
-
-	@Override
-	public void onInitialize() {
 		if (FUELS != null) {
 			JsonObject fuel = config.get("fuel").getAsJsonObject();
 			for (Entry<String, JsonElement> entry : fuel.entrySet()) {
