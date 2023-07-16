@@ -1,33 +1,23 @@
 package com.stratecide.potion_config;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.serialization.Lifecycle;
+import com.stratecide.potion_config.effects.AfterEffect;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeveledCauldronBlock;
-import net.minecraft.block.cauldron.CauldronBehavior;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.data.TrackedDataHandler;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsage;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.item.*;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.event.GameEvent;
-import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,984 +25,1101 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 public class PotionConfigMod implements ModInitializer {
 
 	public static final String MOD_ID = "potion-config";
-	public static final String NBT_KEY = "PotionC";
-	public static final String PREFIX_NORMAL = "normal-";
-	public static final String PREFIX_SPLASH = "splash-";
-	public static final String PREFIX_LINGERING = "lingering-";
-	public static final String PREFIX_ARROW = "arrow-";
-
-	public static final Map<String, Integer> FUELS;
-	public static final Map<String, Potion> WITCH_POTIONS = new HashMap<>();
-	private static final Set<String> WITCH_POTION_IDS = ImmutableSet.of(
-		PREFIX_NORMAL + "fire_resistance",
-		PREFIX_NORMAL + "water_breathing",
-		PREFIX_NORMAL + "healing",
-		PREFIX_NORMAL + "swiftness",
-		PREFIX_SPLASH + "harming",
-		PREFIX_SPLASH + "healing",
-		PREFIX_SPLASH + "poison",
-		PREFIX_SPLASH + "regeneration",
-		PREFIX_SPLASH + "slowness",
-		PREFIX_SPLASH + "weakness"
-	);
-	public static final Map<Potion, Identifier> MOD_COMPAT = new HashMap<>();
-	public static final Map<Identifier, Identifier> CUSTOM_TO_VANILLA = new HashMap<>();
+	public static final String AFTER_EFFECT_PREFIX = "after_effect_";
+	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+	private static final Map<String, CustomPotion> CUSTOM_POTIONS = new HashMap<>();
+	public static boolean hasCustomPotion(String id, Optional<PotionType> type) {
+		if (type.isEmpty())
+			return CUSTOM_POTIONS.containsKey(id);
+		return switch (type.get()) {
+			case Normal -> NORMAL_POTIONS.containsValue(id);
+			case Splash -> SPLASH_POTIONS.containsValue(id);
+			case Lingering -> LINGERING_POTIONS.containsValue(id);
+		};
+		// why is this needed?
+	}
+	public static CustomPotion getCustomPotion(String id) {
+		if (!CUSTOM_POTIONS.containsKey(id)) {
+			LOGGER.warn("Attempted to get custom potion '" + id + "' but it doesn't exist!");
+			return CustomPotion.empty();
+		}
+		return CUSTOM_POTIONS.get(id);
+	}
+	public static final Set<Item> VALID_INGREDIENTS = new HashSet<>();
+	public static final List<CustomRecipe> CUSTOM_RECIPES = new ArrayList<>();
+	public static final List<ArrowRecipe> ARROW_RECIPES = new ArrayList<>();
+	public static final Map<Identifier, Integer> FUELS = new HashMap<>();
+	public static final Map<Identifier, Potion> WITCH_POTIONS_NORMAL = new HashMap<>();
+	public static final Map<Identifier, Potion> WITCH_POTIONS_SPLASH = new HashMap<>();
+	public static final Map<Identifier, Potion> WITCH_POTIONS_LINGERING = new HashMap<>();
+	public static Potion WANDERING_TRADER_POTION;
 
 	public static int TOOLTIP_MILLISECONDS = 2000;
 	public static int STACK_SIZE = 1;
+	public static int STACK_SIZE_SPLASH = 1;
+	public static int STACK_SIZE_LINGERING = 1;
 	public static boolean GLINT = false;
-	public static double BURST_CHANCE = 0;
+	public static double HIDE_EFFECTS_BELOW_CHANCE = 0.;
+	public static boolean HIDE_AFTER_EFFECTS = false;
+	public static String MYSTERY_NORMAL_POTION = null;
+	public static String MYSTERY_SPLASH_POTION = null;
+	public static String MYSTERY_LINGERING_POTION = null;
+	public static String MYSTERY_ARROW = null;
+	public static int DURATION_DEFAULT = 3600;
+	public static String MILK_POTION = null;
+	public static final TrackedDataHandler<PotionColorList> POTION_PARTICLE_COLORS = TrackedDataHandler.of(PotionColorList::writePotionColors, PotionColorList::readPotionColors);
+	static {
+		loadConfigMain();
+		TrackedDataHandlerRegistry.register(POTION_PARTICLE_COLORS);
+	}
 
-	public static Potion WATER_POTION;
-	public static Potion WANDERING_TRADER_POTION;
+	private static final Map<Identifier, String> NORMAL_POTIONS = new HashMap<>();
+	public static final Map<String, List<PotionInput>> NORMAL_INPUTS = new HashMap<>();
+	private static final Map<Identifier, String> SPLASH_POTIONS = new HashMap<>();
+	public static final Map<String, List<PotionInput>> SPLASH_INPUTS = new HashMap<>();
+	private static final Map<Identifier, String> LINGERING_POTIONS = new HashMap<>();
+	public static final Map<String, List<PotionInput>> LINGERING_INPUTS = new HashMap<>();
+	private static final Map<Identifier, String> ARROW_POTIONS = new HashMap<>();
+	public static final Map<String, List<ArrowInput>> ARROW_INPUTS = new HashMap<>();
 
-	public static final Set<Potion> NORMAL_POTIONS = new HashSet<>();
-	public static final Set<Potion> SPLASH_POTIONS = new HashSet<>();
-	public static final Set<Potion> LINGERING_POTIONS = new HashSet<>();
-	public static final Set<Potion> ARROW_POTIONS = new HashSet<>();
+	public static boolean hasNormalPotion(Potion potion) {
+		return NORMAL_POTIONS.containsKey(Registry.POTION.getId(potion));
+	}
+	public static CustomPotion getNormalPotion(Potion replaced) {
+		return getPotion(NORMAL_POTIONS, replaced, MYSTERY_NORMAL_POTION, "normal");
+	}
+	public static boolean hasSplashPotion(Potion potion) {
+		return SPLASH_POTIONS.containsKey(Registry.POTION.getId(potion));
+	}
+	public static CustomPotion getSplashPotion(Potion replaced) {
+		return getPotion(SPLASH_POTIONS, replaced, MYSTERY_SPLASH_POTION, "splash");
+	}
+	public static boolean hasLingeringPotion(Potion potion) {
+		return LINGERING_POTIONS.containsKey(Registry.POTION.getId(potion));
+	}
+	public static CustomPotion getLingeringPotion(Potion replaced) {
+		return getPotion(LINGERING_POTIONS, replaced, MYSTERY_LINGERING_POTION, "lingering");
+	}
+	public static boolean hasCustomArrowPotion(String id) {
+		return ARROW_POTIONS.containsValue(id);
+	}
+	public static boolean hasArrowPotion(Potion potion) {
+		return ARROW_POTIONS.containsKey(Registry.POTION.getId(potion));
+	}
+	public static CustomPotion getArrowPotion(Potion replaced) {
+		return getPotion(ARROW_POTIONS, replaced, MYSTERY_ARROW, "arrow");
+	}
 
-	public static final JsonObject config;
-
-	static  {
-		config = loadConfig();
-
-		if (config.has("fuel") && config.get("fuel").isJsonObject()) {
-			FUELS = new HashMap<>();
-		} else {
-			FUELS = null;
+	private static CustomPotion getPotion(Map<Identifier, String> map, Potion replaced, String mystery, String loggingKey) {
+		Identifier identifier = Registry.POTION.getId(replaced);
+		String customId = map.get(identifier);
+		if (customId != null) {
+			return getCustomPotion(customId);
+		} else if (mystery != null && map.containsValue(mystery)) {
+			return getCustomPotion(mystery);
 		}
+		return CustomPotion.empty();
 	}
 
-	private static StatusEffectInstance[] createStatusEffects(List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations) {
-		assert effects.size() == amplifiers.size();
-		StatusEffectInstance[] result = new StatusEffectInstance[effects.size()];
-		for (int i = 0; i < result.length; i++) {
-			StatusEffect effect = effects.get(i);
-			result[i] = new StatusEffectInstance(effect, effect.isInstant() ? 1 : Math.max(1, (int) Math.round(durations.get(i) * 20)), amplifiers.get(i));
-		}
-		return result;
+	public static String getCustomPotionId(PotionType type, Potion potion) {
+		Map<Identifier, String> map = switch (type) {
+			case Splash -> SPLASH_POTIONS;
+			case Lingering -> LINGERING_POTIONS;
+			default -> NORMAL_POTIONS;
+		};
+		Identifier identifier = Registry.POTION.getId(potion);
+		return map.get(identifier);
+	}
+	public static String getCustomArrowPotionId(Potion potion) {
+		Identifier identifier = Registry.POTION.getId(potion);
+		return ARROW_POTIONS.get(identifier);
 	}
 
-	private static Potion registerPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		Potion potion = new Potion(createStatusEffects(effects, amplifiers, durations));
-		Identifier identifier = new Identifier(MOD_ID, id);
-		if (vanillaId != null) {
-			CUSTOM_TO_VANILLA.put(identifier, vanillaId);
+	public static Potion getOriginalPotion(String customId, PotionType type) {
+		Map<Identifier, String> map = switch (type) {
+			case Splash -> SPLASH_POTIONS;
+			case Lingering -> LINGERING_POTIONS;
+			default -> NORMAL_POTIONS;
+		};
+		for (Map.Entry<Identifier, String> entry : map.entrySet()) {
+			if (entry.getValue().equals(customId)) {
+				return Registry.POTION.get(entry.getKey());
+			}
 		}
-		return Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, identifier), potion, Lifecycle.stable());
+		return Potions.EMPTY;
 	}
-	private static Potion registerSplashPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_SPLASH + id, effects, amplifiers, durations, vanillaId);
-	}
-	private static Potion registerLingeringPotion(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_LINGERING + id, effects, amplifiers, durations, vanillaId);
-	}
-	private static Potion registerTippedArrow(String id, List<StatusEffect> effects, List<Integer> amplifiers, List<Double> durations, Identifier vanillaId) {
-		return registerPotion(PREFIX_ARROW + id, effects, amplifiers, durations, vanillaId);
+	public static Potion getOriginalArrowPotion(String customId) {
+		for (Map.Entry<Identifier, String> entry : ARROW_POTIONS.entrySet()) {
+			if (entry.getValue().equals(customId)) {
+				return Registry.POTION.get(entry.getKey());
+			}
+		}
+		return Potions.EMPTY;
 	}
 
 	@Override
 	public void onInitialize() {
-		if (config.has("stack_size"))
-			STACK_SIZE = config.get("stack_size").getAsInt();
-		if (config.has("glint"))
-			GLINT = config.get("glint").getAsBoolean();
-		if (config.has("burst_chance"))
-			BURST_CHANCE = config.get("burst_chance").getAsDouble();
-
-		for (Iterator<JsonElement> it = config.get("potions").getAsJsonArray().iterator(); it.hasNext(); ) {
-			JsonObject entry = it.next().getAsJsonObject();
-			String potionId = entry.get("id").getAsString();
-			if (!entry.has("duration") && !entry.has("splash") && !entry.has("lingering") && !entry.has("arrow")) {
-				throw new AssertionError("no duration was given for potion: " + potionId);
-			}
-			Identifier vanillaId = null;
-			if (entry.has("vanilla")) {
-				vanillaId = Identifier.tryParse(entry.get("vanilla").getAsString());
-			}
-			List<StatusEffect> effects = new ArrayList<>();
-			List<Integer> amplifiers = new ArrayList<>();
-			List<Double> normalDurations = new ArrayList<>();
-			List<Double> splashDurations = new ArrayList<>();
-			List<Double> lingeringDurations = new ArrayList<>();
-			List<Double> arrowDurations = new ArrayList<>();
-			for (Iterator<JsonElement> it2 = entry.getAsJsonArray("effects").iterator(); it2.hasNext(); ) {
-				JsonObject effect = it2.next().getAsJsonObject();
-				int amplifier = 0;
-				if (effect.has("amplifier"))
-					amplifier = Math.max(0, effect.get("amplifier").getAsInt());
-				StatusEffect statusEffect = Registry.STATUS_EFFECT.get(new Identifier(effect.get("effect").getAsString()));
-				if (statusEffect == null)
-					throw new NullPointerException("Status Effect not found for ID '" + effect.get("effect").getAsString() + "'");
-				effects.add(statusEffect);
-				amplifiers.add(amplifier);
-				if (entry.has("duration"))
-					normalDurations.add(effect.has("duration") ? effect.get("duration").getAsDouble() : entry.get("duration").getAsDouble());
-				if (entry.has("splash"))
-					splashDurations.add(effect.has("splash") ? effect.get("splash").getAsDouble() : entry.get("splash").getAsDouble());
-				if (entry.has("lingering"))
-					lingeringDurations.add(4 * (effect.has("lingering") ? effect.get("lingering").getAsDouble() : entry.get("lingering").getAsDouble()));
-				if (entry.has("arrow"))
-					arrowDurations.add(8.0 * (effect.has("arrow") ? effect.get("arrow").getAsDouble() : entry.get("arrow").getAsDouble()));
-			}
-			if (entry.has("duration"))
-				NORMAL_POTIONS.add(registerPotion(PREFIX_NORMAL + potionId,  effects, amplifiers, normalDurations, vanillaId));
-			if (entry.has("splash"))
-				SPLASH_POTIONS.add(registerSplashPotion(potionId, effects, amplifiers, splashDurations, vanillaId));
-			if (entry.has("lingering"))
-				LINGERING_POTIONS.add(registerLingeringPotion(potionId, effects, amplifiers, lingeringDurations, vanillaId));
-			if (entry.has("arrow"))
-				ARROW_POTIONS.add(registerTippedArrow(potionId, effects, amplifiers, arrowDurations, vanillaId));
-		}
-
-		Potion waterPotion = Registry.POTION.get(new Identifier(MOD_ID, PREFIX_NORMAL + "water"));
-		if (waterPotion == Potions.EMPTY)
-			NORMAL_POTIONS.add(waterPotion = Registry.POTION.add(RegistryKey.of(Registry.POTION_KEY, new Identifier(MOD_ID, PREFIX_NORMAL + "water")), new Potion(), Lifecycle.stable()));
-		WATER_POTION = waterPotion;
-		CUSTOM_TO_VANILLA.put(new Identifier(MOD_ID, PREFIX_NORMAL + "water"), new Identifier("water"));
-
-		JsonObject witch = config.get("witch").getAsJsonObject();
-		for (String id : WITCH_POTION_IDS) {
-			Potion potion = Registry.POTION.get(new Identifier(MOD_ID, witch.get(id).getAsString()));
-			if (potion == Potions.EMPTY)
-				throw new NullPointerException("Potion not found for witch potion '" + id + "'");
-			WITCH_POTIONS.put(id, potion);
-		}
-		WANDERING_TRADER_POTION = Registry.POTION.get(new Identifier(MOD_ID, config.get("wandering_trader_night").getAsString()));
-		if (WANDERING_TRADER_POTION == Potions.EMPTY)
-			throw new NullPointerException("Potion not found for wandering trader");
-
-		if (FUELS != null) {
-			JsonObject fuel = config.get("fuel").getAsJsonObject();
-			for (Entry<String, JsonElement> entry : fuel.entrySet()) {
-				if (Registry.ITEM.get(new Identifier(entry.getKey())) == Items.AIR)
-					throw new AssertionError("no Item found in registry for fuel type '" + entry.getKey() + "'");
-				if (entry.getValue().getAsInt() > 0)
-					FUELS.put(entry.getKey(), entry.getValue().getAsInt());
-			}
-		}
-
-		if (!config.has("overwriteCauldron")) {
-			CauldronBehavior emptyBehavior = CauldronBehavior.EMPTY_CAULDRON_BEHAVIOR.get(Items.POTION);
-			CauldronBehavior.EMPTY_CAULDRON_BEHAVIOR.put(Items.POTION, (state, world, pos, player, hand, stack) -> {
-				if (PotionUtil.getPotion(stack) != WATER_POTION) {
-					return emptyBehavior.interact(state, world, pos, player, hand, stack);
-				} else {
-					if (!world.isClient) {
-						Item item = stack.getItem();
-						player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
-						player.incrementStat(Stats.USE_CAULDRON);
-						player.incrementStat(Stats.USED.getOrCreateStat(item));
-						world.setBlockState(pos, Blocks.WATER_CAULDRON.getDefaultState());
-						world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
-						world.emitGameEvent(null, GameEvent.FLUID_PLACE, pos);
-					}
-
-					return ActionResult.success(world.isClient);
-				}
-			});
-			CauldronBehavior waterBehavior = CauldronBehavior.WATER_CAULDRON_BEHAVIOR.get(Items.POTION);
-			CauldronBehavior.WATER_CAULDRON_BEHAVIOR.put(Items.POTION, (state, world, pos, player, hand, stack) -> {
-				if (state.get(LeveledCauldronBlock.LEVEL) != 3 && PotionUtil.getPotion(stack) == WATER_POTION) {
-					if (!world.isClient) {
-						player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
-						player.incrementStat(Stats.USE_CAULDRON);
-						player.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));
-						world.setBlockState(pos, state.cycle(LeveledCauldronBlock.LEVEL));
-						world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
-						world.emitGameEvent(null, GameEvent.FLUID_PLACE, pos);
-					}
-
-					return ActionResult.success(world.isClient);
-				} else {
-					return waterBehavior.interact(state, world, pos, player, hand, stack);
-				}
-			});
-		}
-
-		for (Identifier identifier : MOD_COMPAT.values()) {
-			if (Registry.POTION.get(identifier) == Potions.EMPTY)
-				throw new AssertionError("no Item found in registry for potion type '" + identifier.toString() + "'");
-		}
+		loadConfigEffects();
+		loadConfigNormal();
+		loadConfigSplash();
+		loadConfigLingering();
+		loadConfigArrows();
+		Map<String, Ingredient> itemGroups = loadConfigIngredientGroups();
+		loadConfigRecipes(itemGroups);
+		loadConfigArrowRecipes();
+		loadConfigFuel();
+		loadConfigOther();
+		buildRecipeInputs();
 	}
 
-	public static void replaceModdedPotion(Identifier originalId, Potion moddedPotion) {
-		if (!config.has("replace") || !config.get("replace").getAsJsonObject().has(originalId.toString())) {
-			System.out.println("(Potion-Config) WARNING: no replacement configured for modded Potion: " + originalId);
-			return;
-		}
-		String replacementId = config.get("replace").getAsJsonObject().get(originalId.toString()).getAsString();
-		Identifier replacement = new Identifier(MOD_ID, replacementId);
-		MOD_COMPAT.put(moddedPotion, replacement);
-		CUSTOM_TO_VANILLA.put(replacement, originalId);
-	}
-
-	public static Potion findCustomPotionFromStack(ItemStack stack) {
-        String prefix = null;
-        if (stack.isOf(Items.POTION))
-            prefix = PotionConfigMod.PREFIX_NORMAL;
-        else if (stack.isOf(Items.SPLASH_POTION))
-            prefix = PotionConfigMod.PREFIX_SPLASH;
-        else if (stack.isOf(Items.LINGERING_POTION))
-            prefix = PotionConfigMod.PREFIX_LINGERING;
-        else if (stack.isOf(Items.TIPPED_ARROW))
-            prefix = PotionConfigMod.PREFIX_ARROW;
-		return findCustomPotionFromNbt(stack.getNbt(), prefix);
-	}
-	public static Potion findCustomPotionFromNbt(@Nullable NbtCompound compound, @Nullable String prefix) {
-		if (compound == null) {
-			return Potions.EMPTY;
-		}
-		Potion potion = Potion.byId(compound.getString(PotionConfigMod.NBT_KEY));
-		if (Potions.EMPTY == potion) {
-			Identifier identifier = Identifier.tryParse(compound.getString(PotionUtil.POTION_KEY));
-			for (Identifier key : PotionConfigMod.CUSTOM_TO_VANILLA.keySet())
-				if (PotionConfigMod.CUSTOM_TO_VANILLA.get(key).equals(identifier)) {
-					if (prefix == null || key.getPath().startsWith(prefix)) {
-						identifier = key;
-						break;
-					}
-				}
-			potion = Registry.POTION.get(identifier);
-		}
-		return potion;
-	}
-
-	private static JsonObject loadConfig() {
-		File file = new File(CONFIG_FILE);
+	private static JsonElement loadConfig(String filename, String defaultContent) {
+		File file = new File(filename);
 		String data;
-		if (!file.exists()) {
-			data = DEFAULT_CONFIG;
-			try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
+		if (!file.exists() || true) {
+			file.getParentFile().mkdirs();
+			data = defaultContent;
+			try (FileWriter writer = new FileWriter(filename)) {
 				writer.write(data);
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-		else {
+		} else {
 			try (Scanner scanner = new Scanner(file)) {
 				StringBuilder builder = new StringBuilder();
 				while (scanner.hasNextLine())
 					builder.append(scanner.nextLine());
 				data = builder.toString();
-			}
-			catch (FileNotFoundException e) {
+			} catch (FileNotFoundException e) {
 				e.printStackTrace();
-				data = DEFAULT_CONFIG;
+				data = defaultContent;
 			}
 		}
-		return JsonParser.parseString(data).getAsJsonObject();
+		LOGGER.info("parsing " + filename);
+		return JsonParser.parseString(data);
 	}
 
-	private static final String CONFIG_FILE = "config/potion-config.json";
-	private static final String DEFAULT_CONFIG = """
-{
-	"stack_size": 1,
-	"glint": false,
-	"burst_chance": 0.0,
-	"potions": [
-		{
-			"id": "water",
-			"vanilla": "water",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": []
-		},
-		{
-			"id": "mundane",
-			"vanilla": "mundane",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": []
-		},
-		{
-			"id": "thick",
-			"vanilla": "thick",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": []
-		},
-		{
-			"id": "awkward",
-			"vanilla": "awkward",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": []
-		},
-		{
-			"id": "night_vision",
-			"vanilla": "night_vision",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:night_vision"
-				}
-			]
-		},
-		{
-			"id": "long_night_vision",
-			"vanilla": "long_night_vision",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:night_vision"
-				}
-			]
-		},
-		{
-			"id": "invisibility",
-			"vanilla": "invisibility",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:invisibility"
-				}
-			]
-		},
-		{
-			"id": "long_invisibility",
-			"vanilla": "long_invisibility",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:invisibility"
-				}
-			]
-		},
-		{
-			"id": "leaping",
-			"vanilla": "leaping",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:jump_boost"
-				}
-			]
-		},
-		{
-			"id": "long_leaping",
-			"vanilla": "long_leaping",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:jump_boost"
-				}
-			]
-		},
-		{
-			"id": "strong_leaping",
-			"vanilla": "strong_leaping",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:jump_boost",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "fire_resistance",
-			"vanilla": "fire_resistance",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:fire_resistance"
-				}
-			]
-		},
-		{
-			"id": "long_fire_resistance",
-			"vanilla": "long_fire_resistance",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:fire_resistance"
-				}
-			]
-		},
-		{
-			"id": "swiftness",
-			"vanilla": "swiftness",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:speed"
-				}
-			]
-		},
-		{
-			"id": "long_swiftness",
-			"vanilla": "long_swiftness",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:speed"
-				}
-			]
-		},
-		{
-			"id": "strong_swiftness",
-			"vanilla": "strong_swiftness",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:speed",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "slowness",
-			"vanilla": "slowness",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:slowness"
-				}
-			]
-		},
-		{
-			"id": "slow_slowness",
-			"vanilla": "slow_slowness",
-			"duration": 240,
-			"splash": 240,
-			"lingering": 60,
-			"arrow": 30,
-			"effects": [
-				{
-					"effect": "minecraft:slowness"
-				}
-			]
-		},
-		{
-			"id": "strong_slowness",
-			"vanilla": "strong_slowness",
-			"duration": 20,
-			"splash": 20,
-			"lingering": 5,
-			"arrow": 2.5,
-			"effects": [
-				{
-					"effect": "minecraft:slowness",
-					"amplifier": 3
-				}
-			]
-		},
-		{
-			"id": "turtle_master",
-			"vanilla": "turtle_master",
-			"duration": 20,
-			"splash": 20,
-			"lingering": 5,
-			"arrow": 2.5,
-			"effects": [
-				{
-					"effect": "minecraft:slowness",
-					"amplifier": 3
-				},
-				{
-					"effect": "minecraft:resistance",
-					"amplifier": 2
-				}
-			]
-		},
-		{
-			"id": "long_turtle_master",
-			"vanilla": "long_turtle_master",
-			"duration": 40,
-			"splash": 40,
-			"lingering": 10,
-			"arrow": 5,
-			"effects": [
-				{
-					"effect": "minecraft:slowness",
-					"amplifier": 3
-				},
-				{
-					"effect": "minecraft:resistance",
-					"amplifier": 2
-				}
-			]
-		},
-		{
-			"id": "strong_turtle_master",
-			"vanilla": "strong_turtle_master",
-			"duration": 20,
-			"splash": 20,
-			"lingering": 5,
-			"arrow": 2.5,
-			"effects": [
-				{
-					"effect": "minecraft:slowness",
-					"amplifier": 5
-				},
-				{
-					"effect": "minecraft:resistance",
-					"amplifier": 3
-				}
-			]
-		},
-		{
-			"id": "water_breathing",
-			"vanilla": "water_breathing",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:water_breathing"
-				}
-			]
-		},
-		{
-			"id": "long_water_breathing",
-			"vanilla": "long_water_breathing",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:water_breathing"
-				}
-			]
-		},
-		{
-			"id": "healing",
-			"vanilla": "healing",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": [
-				{
-					"effect": "minecraft:instant_health"
-				}
-			]
-		},
-		{
-			"id": "strong_healing",
-			"vanilla": "strong_healing",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": [
-				{
-					"effect": "minecraft:instant_health",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "harming",
-			"vanilla": "harming",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": [
-				{
-					"effect": "minecraft:instant_damage"
-				}
-			]
-		},
-		{
-			"id": "strong_harming",
-			"vanilla": "strong_harming",
-			"duration": 0,
-			"splash": 0,
-			"lingering": 0,
-			"arrow": 0,
-			"effects": [
-				{
-					"effect": "minecraft:instant_damage",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "poison",
-			"vanilla": "poison",
-			"duration": 45,
-			"splash": 45,
-			"lingering": 11.25,
-			"arrow": 5.6,
-			"effects": [
-				{
-					"effect": "minecraft:poison"
-				}
-			]
-		},
-		{
-			"id": "long_poison",
-			"vanilla": "long_poison",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:poison"
-				}
-			]
-		},
-		{
-			"id": "strong_poison",
-			"vanilla": "strong_poison",
-			"duration": 21.6,
-			"splash": 21.6,
-			"lingering": 5.4,
-			"arrow": 2.7,
-			"effects": [
-				{
-					"effect": "minecraft:poison",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "regeneration",
-			"vanilla": "regeneration",
-			"duration": 45,
-			"splash": 45,
-			"lingering": 11.25,
-			"arrow": 5.6,
-			"effects": [
-				{
-					"effect": "minecraft:regeneration"
-				}
-			]
-		},
-		{
-			"id": "long_regeneration",
-			"vanilla": "long_regeneration",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:regeneration"
-				}
-			]
-		},
-		{
-			"id": "strong_regeneration",
-			"vanilla": "strong_regeneration",
-			"duration": 22.5,
-			"splash": 22.5,
-			"lingering": 5.6,
-			"arrow": 2.8,
-			"effects": [
-				{
-					"effect": "minecraft:regeneration",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "strength",
-			"vanilla": "strength",
-			"duration": 180,
-			"splash": 180,
-			"lingering": 45,
-			"arrow": 22.5,
-			"effects": [
-				{
-					"effect": "minecraft:strength"
-				}
-			]
-		},
-		{
-			"id": "long_strength",
-			"vanilla": "long_strength",
-			"duration": 480,
-			"splash": 480,
-			"lingering": 120,
-			"arrow": 60,
-			"effects": [
-				{
-					"effect": "minecraft:strength"
-				}
-			]
-		},
-		{
-			"id": "strong_strength",
-			"vanilla": "strong_strength",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:strength",
-					"amplifier": 1
-				}
-			]
-		},
-		{
-			"id": "weakness",
-			"vanilla": "weakness",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:weakness"
-				}
-			]
-		},
-		{
-			"id": "long_weakness",
-			"vanilla": "long_weakness",
-			"duration": 240,
-			"splash": 240,
-			"lingering": 60,
-			"arrow": 30,
-			"effects": [
-				{
-					"effect": "minecraft:weakness"
-				}
-			]
-		},
-		{
-			"id": "slow_falling",
-			"vanilla": "slow_falling",
-			"duration": 90,
-			"splash": 90,
-			"lingering": 22.5,
-			"arrow": 11.25,
-			"effects": [
-				{
-					"effect": "minecraft:slow_falling"
-				}
-			]
-		},
-		{
-			"id": "long_slow_falling",
-			"vanilla": "long_slow_falling",
-			"duration": 240,
-			"splash": 240,
-			"lingering": 60,
-			"arrow": 30,
-			"effects": [
-				{
-					"effect": "minecraft:slow_falling"
-				}
-			]
+	/**
+	 * STATUS EFFECT
+	 * 		unchanged from vanilla
+	 *
+	 * POTION
+	 * 		duration is the same for all effects
+	 * 		optional aftereffects POTION
+	 * 			(doesn't go into effect if no effects are applied from the current stage)
+	 * 		has a list of status effects, each with the following attributes
+	 * 			strength (== 1 + amplifier)
+	 * 			chance (chance of being applied when affected by the potion)
+	 *
+	 * NORMAL, SPLASH, LINGERING, ARROW
+	 * 		optional vanilla id
+	 * 		custom potion id
+	 *
+	 * SPLASH, LINGERING
+	 * 		radius
+	 */
+
+	private static final String CONFIG_DIR = "config/potion-config/";
+
+
+	private static void loadConfigMain() {
+		JsonObject json = loadConfig(CONFIG_FILE_MAIN, DEFAULT_MAIN).getAsJsonObject();
+		if (json.has("stack_size")) {
+			STACK_SIZE = json.get("stack_size").getAsInt();
 		}
-	],
-	"ingredient_groups": {
-		"mundane": [
-			"minecraft:glistering_melon_slice",
-			"minecraft:ghast_tear",
-			"minecraft:rabbit_foot",
-			"minecraft:blaze_powder",
-			"minecraft:spider_eye",
-			"minecraft:sugar",
-			"minecraft:magma_cream",
-			"minecraft:redstone"
+		if (json.has("stack_size_splash")) {
+			STACK_SIZE_SPLASH = json.get("stack_size_splash").getAsInt();
+		}
+		if (json.has("stack_size_lingering")) {
+			STACK_SIZE_LINGERING = json.get("stack_size_lingering").getAsInt();
+		}
+		if (json.has("glint")) {
+			GLINT = json.get("glint").getAsBoolean();
+		}
+		if (json.has("hide_effects_below_chance")) {
+			HIDE_EFFECTS_BELOW_CHANCE = json.get("hide_effects_below_chance").getAsDouble();
+		}
+		if (json.has("hide_after_effects")) {
+			HIDE_AFTER_EFFECTS = json.get("hide_after_effects").getAsBoolean();
+		}
+		if (json.has("default_duration")) {
+			DURATION_DEFAULT = json.get("default_duration").getAsInt();
+		}
+		if (json.has("milk")) {
+			MILK_POTION = json.get("milk").getAsString();
+		}
+		if (json.has("mystery_normal")) {
+			MYSTERY_NORMAL_POTION = json.get("mystery_normal").getAsString();
+		}
+		if (json.has("mystery_splash")) {
+			MYSTERY_SPLASH_POTION = json.get("mystery_splash").getAsString();
+		}
+		if (json.has("mystery_lingering")) {
+			MYSTERY_LINGERING_POTION = json.get("mystery_lingering").getAsString();
+		}
+		if (json.has("mystery_arrow")) {
+			MYSTERY_ARROW = json.get("mystery_arrow").getAsString();
+		}
+	}
+	private static final String CONFIG_FILE_MAIN = CONFIG_DIR + "general.json";
+	private static final String DEFAULT_MAIN = """
+{
+	"stack_size": 16,
+	"stack_size_splash": 4,
+	"stack_size_lingering": 3,
+	"glint": false,
+	"hide_effects_below_chance": 0.3,
+	"hide_after_effects": false,
+	"default_duration": 3600,
+	"mystery_normal": "awkward",
+	"mystery_splash": "thick",
+	"mystery_lingering": "rainbow",
+	"mystery_arrow": "swiftness",
+	"milk": "milk"
+}""";
+
+	private void loadConfigEffects() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_EFFECTS, DEFAULT_EFFECTS).getAsJsonObject();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String id = entry.getKey();
+			Identifier afterEffectId = new Identifier(MOD_ID, AFTER_EFFECT_PREFIX + id);
+			Registry.register(Registry.STATUS_EFFECT, afterEffectId, new AfterEffect(id));
+			CustomPotion potion = CustomPotion.parse(entry.getValue().getAsJsonObject());
+			CUSTOM_POTIONS.put(id, potion);
+		}
+	}
+	private static final String CONFIG_FILE_EFFECTS = CONFIG_DIR + "effects.json";
+	private static final String DEFAULT_EFFECTS = """
+{
+	"water": { "color": "0000ff" },
+	"mundane": {
+		"color": "6633ff"
+	},
+	"thick": {
+		"color": "cc66ff",
+		"duration": 200,
+		"minecraft:wither": { "chance": 0.2 },
+		"minecraft:regeneration": { "chance": 0.2 },
+		"minecraft:nausea": { "chance": 0.4 }
+	},
+	"awkward": {
+		"color": "3388ff",
+		"duration": 200,
+		"minecraft:poison": { "chance": 0.2 },
+		"minecraft:regeneration": { "chance": 0.2 },
+		"minecraft:glowing": { "chance": 0.4 }
+	},
+	
+	"milk": {
+		"color": "ffffff",
+		"potion-config:milk": {}
+	},
+	"lemonade": {
+		"color": "ddff00",
+		"duration": 1200,
+		"minecraft:speed": { "amplifier": 1 },
+		"minecraft:jump_boost": {},
+		"after": "aftereffect_slow"
+	},
+	"aftereffect_slow": {
+		"duration": 100,
+		"minecraft:slowness": { "chance": 0.75 },
+		"potion-config:jump_drop": { "chance": 0.5 }
+	},
+	"beer": {
+		"color": "d8c068",
+		"duration": 600,
+		"potion-config:drunk": { "chance": 0.5 },
+		"minecraft:nausea": {}
+	},
+	"unfiltered_cider": {
+		"color": "b9812f",
+		"duration": 600,
+		"potion-config:drunk": {},
+		"minecraft:nausea": { "amplifier": 1 },
+		"minecraft:hunger": { "chance": 0.6 },
+		"minecraft:darkness": { "chance": 0.6 },
+		"after": "beer"
+	},
+	"cider": {
+		"color": "b9812f",
+		"duration": 600,
+		"potion-config:drunk": {},
+		"minecraft:nausea": { "amplifier": 1 },
+		"minecraft:hunger": { "chance": 0.2 },
+		"after": "beer"
+	},
+	"vodka": {
+		"color": "bbbbbb",
+		"duration": 600,
+		"potion-config:drunk": { "amplifier": 3 },
+		"minecraft:nausea": { "amplifier": 3 },
+		"minecraft:hunger": { "chance": 0.3 },
+		"after": "cider"
+	},
+	"health_gamble": {
+		"color": "F87D23",
+		"potion-config:health_boost": { "chance": 0.5, "amplifier": 4 },
+		"potion-config:health_drop": { "chance": 0.5, "amplifier": 4 }
+	},
+	"floating": {
+		"color": "CEFFFF",
+		"duration": 400,
+		"minecraft:levitation": { "amplifier": 2 },
+		"minecraft:speed": {},
+		"potion-config:particles": { "color": "CEFFFF" },
+		"after": "aftereffect_slow_falling"
+	},
+	"aftereffect_slow_falling": {
+		"duration": 800,
+		"minecraft:slow_falling": {}
+	},
+	"creative_flight": {
+		"color": "66bbff",
+		"potion-config:creative_flight": {},
+		"after": "aftereffect_slow_falling"
+	},
+	"turtle_master": {
+		"potion-config:knockback_resistance": { "amplifier": 2 },
+		"minecraft:slowness": { "amplifier": 2 },
+		"minecraft:resistance": { "amplifier": 2 },
+		"potion-config:jump_drop": {}
+	},
+	"invisibility": {
+		"color": "7F8392",
+		"minecraft:invisibility": {},
+		"minecraft:darkness": {}
+	},
+	"fire_resistance_witch": {
+		"color": "E49A3A",
+		"duration": 2400,
+		"potion-config:particles": { "color": "E49A3A" },
+		"minecraft:fire_resistance": {}
+	},
+	"water_breathing_witch": {
+		"color": "2E5299",
+		"duration": 2400,
+		"potion-config:particles": { "color": "2E5299" },
+		"minecraft:water_breathing": {}
+	},
+	"regeneration_witch": {
+		"color": "CD5CAB",
+		"duration": 2400,
+		"potion-config:particles": { "color": "CD5CAB" },
+		"minecraft:regeneration": {}
+	},
+	
+	"swiftness": {
+		"color": "7CAFC6",
+		"minecraft:speed": { "amplifier": 1 },
+		"minecraft:jump_boost": {},
+		"after": "aftereffect_slow"
+	},
+	"long_swiftness": {
+		"color": "7CAFC6",
+		"duration": 12000,
+		"minecraft:speed": { "amplifier": 1 },
+		"minecraft:jump_boost": {},
+		"after": "aftereffect_slow"
+	},
+	"strength": {
+		"color": "932423",
+		"minecraft:strength": {},
+		"minecraft:haste": { "amplifier": 1 },
+		"after": "aftereffect_weakness"
+	},
+	"aftereffect_weakness": {
+		"duration": 100,
+		"minecraft:mining_fatigue": { "chance": 0.7 },
+		"minecraft:slowness": { "chance": 0.7 },
+		"minecraft:weakness": { "chance": 0.7 }
+	},
+	"night_vision": {
+		"color": "1F1FA1",
+		"minecraft:night_vision": {},
+		"potion-config:particles": {
+			"color": [20, "ffffff", "88ff88"]
+		},
+		"after": "aftereffect_blindness"
+	},
+	"aftereffect_blindness": {
+		"duration": 80,
+		"minecraft:blindness": { "chance": 0.7 }
+	},
+	"water_breathing": {
+		"color": "2E5299",
+		"potion-config:finesse": { "amplifier": 2 },
+		"minecraft:water_breathing": {}
+	},
+	"fire_resistance": {
+		"color": "E49A3A",
+		"minecraft:fire_resistance": {}
+	},
+	"flames": {
+		"color": "ff6600",
+		"potion-config:flames": { "amplifier": 9 }
+	},
+	"wither": {
+		"color": "352A27",
+		"duration": 80,
+		"minecraft:wither": {},
+		"potion-config:particles": { "color": "352A27" }
+	},
+	
+	"poison": {
+		"color": "4E9331",
+		"duration": 100,
+		"minecraft:poison": {},
+		"potion-config:particles": { "color": "4E9331" }
+	},
+	"short_slowness": {
+		"color": "5A6C81",
+		"duration": 200,
+		"minecraft:slowness": {},
+		"potion-config:particles": { "color": "5A6C81" }
+	},
+	"healing": {
+		"color": "CD5CAB",
+		"minecraft:instant_health": { "amplifier": 1 }
+	},
+	"harming": {
+		"color": "430A09",
+		"minecraft:instant_damage": { "amplifier": 1 }
+	},
+	
+	"red": {
+		"color": "ff0000",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "ff0000"
+		}
+	},
+	"green": {
+		"color": "00ff00",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "00ff00"
+		}
+	},
+	"blue": {
+		"color": "0000ff",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "0000ff"
+		}
+	},
+	"yellow": {
+		"color": "ffff00",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "ffff00"
+		}
+	},
+	"cyan": {
+		"color": "00ffff",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "00ffff"
+		}
+	},
+	"pink": {
+		"color": "ff00ff",
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": "ff00ff"
+		}
+	},
+	"orange": {
+		"color": [20, "ff0000", "ffff00"],
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": [20, "ff0000", "ffff00"]
+		}
+	},
+	"azure": {
+		"color": [20, "00ff00", "00ffff"],
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": [20, "00ff00", "00ffff"]
+		}
+	},
+	"purple": {
+		"color": [20, "0000ff", "ff00ff"],
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": [20, "0000ff", "ff00ff"]
+		}
+	},
+	"rainbow": {
+		"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"],
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"]
+		}
+	}
+ }""";
+
+	private static Identifier addPotionTranslation(String replaces, String id) {
+		if (replaces != null) {
+			return new Identifier(replaces);
+		}
+		Identifier identifier = new Identifier(MOD_ID, id);
+		if (!Registry.POTION.containsId(identifier)) {
+			Registry.register(Registry.POTION, identifier, new Potion());
+		}
+		return identifier;
+	}
+
+	private void loadConfigNormal() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_NORMAL, DEFAULT_NORMAL).getAsJsonObject();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String id = entry.getKey();
+			JsonObject json = entry.getValue().getAsJsonObject();
+			String replaced = null;
+			if (json.has("replaces")) {
+				replaced = json.get("replaces").getAsString();
+			}
+			Identifier identifier = addPotionTranslation(replaced, id);
+			NORMAL_POTIONS.put(identifier, id);
+		}
+	}
+	private static final String CONFIG_FILE_NORMAL = CONFIG_DIR + "normal_potions.json";
+	private static final String DEFAULT_NORMAL = """
+{
+	"water": { "replaces": "minecraft:water" },
+	"mundane": { "replaces": "minecraft:mundane" },
+	"thick": { "replaces": "minecraft:thick" },
+	"awkward": { "replaces": "minecraft:awkward" },
+	
+	"milk": { "replaces": "minecraft:leaping" },
+	"lemonade": { "replaces": "minecraft:swiftness" },
+	"beer": { "replaces": "minecraft:poison" },
+	"unfiltered_cider": {},
+	"cider": { "replaces": "minecraft:harming" },
+	"vodka": { "replaces": "minecraft:strong_harming" },
+	"health_gamble": { "replaces": "minecraft:strong_healing" },
+	"floating": { "replaces": "minecraft:slow_falling" },
+	"creative_flight": { "replaces": "minecraft:long_slow_falling" },
+	"turtle_master": { "replaces": "minecraft:turtle_master" },
+	"invisibility": { "replaces": "minecraft:invisibility" },
+	
+	"fire_resistance_witch": { "replaces": "minecraft:fire_resistance" },
+	"water_breathing_witch": { "replaces": "minecraft:water_breathing" },
+	"regeneration_witch": { "replaces": "minecraft:regeneration" }
+}""";
+
+	private void loadConfigSplash() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_SPLASH, DEFAULT_SPLASH).getAsJsonObject();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String id = entry.getKey();
+			JsonObject json = entry.getValue().getAsJsonObject();
+			String replaced = null;
+			if (json.has("replaces")) {
+				replaced = json.get("replaces").getAsString();
+			}
+			Identifier identifier = addPotionTranslation(replaced, id);
+			SPLASH_POTIONS.put(identifier, id);
+		}
+	}
+	private static final String CONFIG_FILE_SPLASH = CONFIG_DIR + "splash_potions.json";
+	private static final String DEFAULT_SPLASH = """
+{
+	"water": { "replaces": "minecraft:water" },
+	"mundane": { "replaces": "minecraft:mundane" },
+	"thick": { "replaces": "minecraft:thick" },
+	"awkward": { "replaces": "minecraft:awkward" },
+	
+	"swiftness": { "replaces": "minecraft:swiftness" },
+	"long_swiftness": { "replaces": "minecraft:long_swiftness" },
+	"strength": { "replaces": "minecraft:strength" },
+	"night_vision": { "replaces": "minecraft:night_vision" },
+	"water_breathing": { "replaces": "minecraft:water_breathing" },
+	"fire_resistance": { "replaces": "minecraft:fire_resistance" },
+	"flames": { "replaces": "minecraft:harming" },
+	"wither": { "replaces": "minecraft:strong_harming" }
+}""";
+
+	private void loadConfigLingering() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_LINGERING, DEFAULT_LINGERING).getAsJsonObject();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String id = entry.getKey();
+			JsonObject json = entry.getValue().getAsJsonObject();
+			String replaced = null;
+			if (json.has("replaces")) {
+				replaced = json.get("replaces").getAsString();
+			}
+			Identifier identifier = addPotionTranslation(replaced, id);
+			LINGERING_POTIONS.put(identifier, id);
+		}
+	}
+	private static final String CONFIG_FILE_LINGERING = CONFIG_DIR + "lingering_potions.json";
+	private static final String DEFAULT_LINGERING = """
+{
+	"water": { "replaces": "minecraft:water" },
+	"mundane": { "replaces": "minecraft:mundane" },
+	"thick": { "replaces": "minecraft:thick" },
+	"awkward": { "replaces": "minecraft:awkward" },
+	
+	"healing": { "replaces": "minecraft:regeneration" },
+	"poison": { "replaces": "minecraft:poison" },
+	"harming": { "replaces": "minecraft:strong_harming" },
+	"short_slowness": { "replaces": "minecraft:slowness" },
+	
+	"red": {},
+	"green": {},
+	"blue": {},
+	"yellow": {},
+	"cyan": {},
+	"pink": {},
+	"orange": {},
+	"azure": {},
+	"purple": {},
+	"rainbow": {}
+}""";
+	private void loadConfigArrows() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_ARROWS, DEFAULT_ARROWS).getAsJsonObject();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String id = entry.getKey();
+			JsonObject json = entry.getValue().getAsJsonObject();
+			String replaced = null;
+			if (json.has("replaces")) {
+				replaced = json.get("replaces").getAsString();
+			}
+			Identifier identifier = addPotionTranslation(replaced, id);
+			ARROW_POTIONS.put(identifier, id);
+		}
+	}
+	private static final String CONFIG_FILE_ARROWS = CONFIG_DIR + "arrows.json";
+	private static final String DEFAULT_ARROWS = """
+{
+	"floating": { "replaces": "minecraft:slow_falling" },
+	"short_slowness": { "replaces": "minecraft:slowness" },
+	
+	"red": {},
+	"green": {},
+	"blue": {},
+	"yellow": {},
+	"cyan": {},
+	"pink": {},
+	"orange": {},
+	"azure": {},
+	"purple": {},
+	"rainbow": {}
+}""";
+
+	private Map<String, Ingredient> loadConfigIngredientGroups() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_INGREDIENT_GROUPS, DEFAULT_INGREDIENT_GROUPS).getAsJsonObject();
+		Map<String, Ingredient> itemGroups = new HashMap<>();
+		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			String groupId = entry.getKey();
+			Set<Item> items = new HashSet<>();
+			for (JsonElement element : entry.getValue().getAsJsonArray()) {
+				Identifier identifier = new Identifier(element.getAsString());
+				Item item = Registry.ITEM.get(identifier);
+				if (item == Items.AIR) {
+					LOGGER.warn("Missing item in ingredient group '" + groupId + "': " + identifier);
+				} else {
+					items.add(item);
+				}
+			}
+			if (items.size() > 0) {
+				Ingredient ingredient = Ingredient.ofStacks(items.stream().map(ItemStack::new));
+				itemGroups.put(groupId, ingredient);
+			}
+		}
+		return itemGroups;
+	}
+	private static final String CONFIG_FILE_INGREDIENT_GROUPS = CONFIG_DIR + "ingredient_groups.json";
+	private static final String DEFAULT_INGREDIENT_GROUPS = """
+{
+	"thick_items": [
+		"minecraft:rotten_flesh",
+		"minecraft:spider_eye"
+	]
+}""";
+
+	/**
+	 * recipe has
+	 * 		input pattern
+	 * 		input item type
+	 * 		ingredient (item or itemGroup)
+	 * 		list of
+	 * 			output pattern
+	 * 			output item type
+	 * 			weight (relative chance of being selected)
+	 *
+	 */
+	private void loadConfigRecipes(Map<String, Ingredient> itemGroups) {
+		JsonArray jsonArray = loadConfig(CONFIG_FILE_RECIPES, DEFAULT_RECIPES).getAsJsonArray();
+		for (JsonElement jsonElement : jsonArray) {
+			JsonObject json = jsonElement.getAsJsonObject();
+
+			JsonArray input = json.get("input").getAsJsonArray();
+			String ingredientId = input.get(0).getAsString();
+			Ingredient ingredient = itemGroups.get(ingredientId);
+			if (ingredient == null) {
+				Item item = Registry.ITEM.get(new Identifier(ingredientId));
+				if (item == Items.AIR)
+					throw new AssertionError("Invalid ingredient identifier : " + ingredientId);
+				ingredient = Ingredient.ofItems(item);
+			}
+			Pattern inputPattern = CustomRecipe.patternFromString(input.get(1).getAsString(), true);
+			Optional<PotionType> inputType = Optional.empty();
+			if (input.size() > 2) {
+				inputType = PotionType.parse(input.get(2).getAsString());
+			}
+
+			List<CustomRecipe.Output> outputs = new ArrayList<>();
+			if (json.has("output")) {
+				JsonArray output = json.get("output").getAsJsonArray();
+				Pattern outputPattern = CustomRecipe.patternFromString(output.get(0).getAsString(), false);
+				Optional<PotionType> outputType = Optional.empty();
+				if (output.size() > 1) {
+					outputType = PotionType.parse(output.get(1).getAsString());
+				}
+				outputs.add(new CustomRecipe.Output(1, outputPattern.toString(), outputType));
+			} else {
+				for (JsonElement element : json.get("outputs").getAsJsonArray()) {
+					JsonArray output = element.getAsJsonArray();
+					int weight = output.get(0).getAsInt();
+					Pattern outputPattern = CustomRecipe.patternFromString(output.get(1).getAsString(), false);
+					Optional<PotionType> outputType = Optional.empty();
+					if (output.size() > 2) {
+						outputType = PotionType.parse(output.get(2).getAsString());
+					}
+					outputs.add(new CustomRecipe.Output(Math.max(1, weight), outputPattern.toString(), outputType));
+				}
+			}
+
+			CustomRecipe recipe = new CustomRecipe(inputPattern, inputType, ingredient, outputs);
+			for (ItemStack stack : ingredient.getMatchingStacks()) {
+				VALID_INGREDIENTS.add(stack.getItem());
+			}
+			CUSTOM_RECIPES.add(recipe);
+		}
+	}
+	private static void buildRecipeInputs() {
+		for (PotionType type : PotionType.values()) {
+			Collection<String> customIds = switch (type) {
+				case Normal -> NORMAL_POTIONS.values();
+				case Splash -> SPLASH_POTIONS.values();
+				case Lingering -> LINGERING_POTIONS.values();
+			};
+			for (String customId : customIds) {
+				for (Item item : VALID_INGREDIENTS) {
+					ItemStack ingredient = new ItemStack(item);
+					for (CustomRecipe recipe : CUSTOM_RECIPES) {
+						if (recipe.matches(type, customId, ingredient)) {
+							Potion potion = getOriginalPotion(customId, type);
+							for (CustomRecipe.Result result : recipe.craftOptions(type, potion)) {
+								Map<String, List<PotionInput>> inputs = switch (result.outputType()) {
+									case Normal -> NORMAL_INPUTS;
+									case Splash -> SPLASH_INPUTS;
+									case Lingering -> LINGERING_INPUTS;
+								};
+								PotionInput input = new PotionInput(potion, type, item);
+								if (!inputs.containsKey(result.customId())) {
+									inputs.put(result.customId(), new ArrayList<>());
+								}
+								inputs.get(result.customId()).add(input);
+							}
+							break;
+						}
+					}
+				}
+				for (ArrowRecipe recipe : ARROW_RECIPES) {
+					if (recipe.matches(type, customId)) {
+						Potion potion = getOriginalPotion(customId, type);
+						ItemStack result = recipe.craft(type, potion);
+						String resultId = getCustomArrowPotionId(PotionUtil.getPotion(result));
+						ArrowInput input = new ArrowInput(potion, type);
+						if (!ARROW_INPUTS.containsKey(resultId)) {
+							ARROW_INPUTS.put(resultId, new ArrayList<>());
+						}
+						ARROW_INPUTS.get(resultId).add(input);
+						break;
+					}
+				}
+			}
+		}
+	}
+	private static final String CONFIG_FILE_RECIPES = CONFIG_DIR + "recipes.json";
+	private static final String DEFAULT_RECIPES = """
+[
+	{
+		"input": ["thick_items", "water"],
+		"output": ["thick"]
+	},
+	{
+		"input": ["minecraft:gunpowder", "*", "normal"],
+		"output": ["{1}", "splash"]
+	},
+	{
+		"input": ["minecraft:gunpowder", "*", "splash"],
+		"output": ["{1}", "lingering"]
+	},
+	
+	{
+		"input": ["minecraft:sugar", "water"],
+		"output": ["lemonade"]
+	},
+	{
+		"input": ["minecraft:wheat", "water"],
+		"output": ["beer"]
+	},
+	{
+		"input": ["minecraft:apple", "lemonade"],
+		"output": ["unfiltered_cider"]
+	},
+	{
+		"input": ["minecraft:paper", "unfiltered_cider"],
+		"output": ["cider"]
+	},
+	{
+		"input": ["minecraft:poisonous_potato", "lemonade"],
+		"output": ["vodka"]
+	},
+	{
+		"input": ["minecraft:nether_wart", "thick"],
+		"output": ["health_gamble"]
+	},
+	{
+		"input": ["minecraft:phantom_membrane", "thick"],
+		"outputs": [
+			[2, "floating"],
+			[1, "creative_flight"]
 		]
 	},
-	"recipes": [
-		{
-			"input": "*-*",
-			"ingredient": "minecraft:redstone",
-			"output": "{1}-long_{2}"
-		},
-		{
-			"input": "*-*",
-			"ingredient": "minecraft:glowstone_dust",
-			"output": "{1}-strong_{2}"
-		},
-		{
-			"input": "normal-*",
-			"ingredient": "minecraft:gunpowder",
-			"output": "splash-{1}"
-		},
-		{
-			"input": "normal-*",
-			"ingredient": "minecraft:dragon_breath",
-			"output": "lingering-{1}"
-		},
-		{
-			"input": "*-water",
-			"ingredient": "mundane",
-			"output": "{1}-mundane"
-		},
-		{
-			"input": "*-water",
-			"ingredient": "minecraft:glowstone_dust",
-			"output": "{1}-thick"
-		},
-		{
-			"input": "*-water",
-			"ingredient": "minecraft:nether_wart",
-			"output": "{1}-awkward"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:golden_carrot",
-			"output": "{1}-night_vision"
-		},
-		{
-			"input": "*night_vision",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}invisibility"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:magma_cream",
-			"output": "{1}-fire_resistance"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:rabbit_foot",
-			"output": "{1}-leaping"
-		},
-		{
-			"input": "*leaping",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}slowness"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:turtle_helmet",
-			"output": "{1}-turtle_master"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:sugar",
-			"output": "{1}-swiftness"
-		},
-		{
-			"input": "*swiftness",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}slowness"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:pufferfish",
-			"output": "{1}-water_breathing"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:glistering_melon_slice",
-			"output": "{1}-healing"
-		},
-		{
-			"input": "*healing",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}harming"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:spider_eye",
-			"output": "{1}-poison"
-		},
-		{
-			"input": "*poison",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}harming"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:ghast_tear",
-			"output": "{1}-regeneration"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:blaze_powder",
-			"output": "{1}-strength"
-		},
-		{
-			"input": "*-water",
-			"ingredient": "minecraft:fermented_spider_eye",
-			"output": "{1}-weakness"
-		},
-		{
-			"input": "*-awkward",
-			"ingredient": "minecraft:phantom_membrane",
-			"output": "{1}-slow_falling"
-		}
-	],
-	"arrow_recipes": [
-		{
-			"input": "splash-*",
-			"output": "{1}"
-		}
-	],
-	"fuel": {
-		"minecraft:blaze_powder": 20
+	{
+		"input": ["minecraft:scute", "thick"],
+		"output": ["turtle_master"]
 	},
-	"witch": {
-		"normal-fire_resistance": "normal-fire_resistance",
-		"normal-water_breathing": "normal-water_breathing",
-		"normal-healing": "normal-healing",
-		"normal-swiftness": "normal-swiftness",
-		"splash-harming": "splash-harming",
-		"splash-healing": "splash-healing",
-		"splash-poison": "splash-poison",
-		"splash-regeneration": "splash-regeneration",
-		"splash-slowness": "splash-slowness",
-		"splash-weakness": "splash-weakness"
+	{
+		"input": ["minecraft:poisonous_potato", "thick"],
+		"output": ["invisibility"]
 	},
-	"wandering_trader_night": "normal-invisibility"
+	
+	{
+		"input": ["minecraft:sugar", "thick"],
+		"outputs": [
+			[4, "swiftness"],
+			[1, "awkward"]
+		]
+	},
+	{
+		"input": ["minecraft:glistering_melon_slice", "swiftness"],
+		"output": ["long_swiftness"]
+	},
+	{
+		"input": ["minecraft:tropical_fish", "thick"],
+		"outputs": [
+			[4, "strength"],
+			[1, "awkward"]
+		]
+	},
+	{
+		"input": ["minecraft:carrot", "thick"],
+		"outputs": [
+			[4, "night_vision"],
+			[1, "awkward"]
+		]
+	},
+	{
+		"input": ["minecraft:pufferfish", "thick"],
+		"output": ["water_breathing"]
+	},
+	{
+		"input": ["minecraft:magma_cream", "thick"],
+		"output": ["fire_resistance"]
+	},
+	{
+		"input": ["minecraft:blaze_powder", "thick"],
+		"output": ["flames"]
+	},
+	{
+		"input": ["minecraft:fermented_spider_eye", "thick"],
+		"output": ["wither"]
+	},
+	
+	{
+		"input": ["minecraft:glistering_melon_slice", "thick"],
+		"output": ["healing"]
+	},
+	{
+		"input": ["minecraft:spider_eye", "thick"],
+		"output": ["poison"]
+	},
+	{
+		"input": ["minecraft:fermented_spider_eye", "thick"],
+		"output": ["harming"]
+	},
+	{
+		"input": ["minecraft:slime_ball", "thick"],
+		"output": ["short_slowness"]
+	},
+
+	{
+		"input": ["minecraft:red_dye", "mundane"],
+		"output": ["red"]
+	},
+	{
+		"input": ["minecraft:green_dye", "mundane"],
+		"output": ["green"]
+	},
+	{
+		"input": ["minecraft:blue_dye", "mundane"],
+		"output": ["blue"]
+	},
+	{
+		"input": ["minecraft:yellow_dye", "mundane"],
+		"output": ["yellow"]
+	},
+	{
+		"input": ["minecraft:cyan_dye", "mundane"],
+		"output": ["cyan"]
+	},
+	{
+		"input": ["minecraft:pink_dye", "mundane"],
+		"output": ["pink"]
+	},
+	
+	{
+		"input": ["minecraft:yellow_dye", "red"],
+		"output": ["orange"]
+	},
+	{
+		"input": ["minecraft:cyan_dye", "green"],
+		"output": ["azure"]
+	},
+	{
+		"input": ["minecraft:pink_dye", "blue"],
+		"output": ["purple"]
+	},
+	{
+		"input": ["minecraft:red_dye", "yellow"],
+		"output": ["orange"]
+	},
+	{
+		"input": ["minecraft:green_dye", "cyan"],
+		"output": ["azure"]
+	},
+	{
+		"input": ["minecraft:blue_dye", "pink"],
+		"output": ["purple"]
+	},
+	
+	{
+		"input": ["minecraft:blue_dye", "orange"],
+		"output": ["rainbow"]
+	},
+	{
+		"input": ["minecraft:red_dye", "azure"],
+		"output": ["rainbow"]
+	},
+	{
+		"input": ["minecraft:green_dye", "purple"],
+		"output": ["rainbow"]
+	}
+]""";
+
+	private void loadConfigArrowRecipes() {
+		JsonArray jsonArray = loadConfig(CONFIG_FILE_ARROW_RECIPES, DEFAULT_ARROW_RECIPES).getAsJsonArray();
+		for (JsonElement element : jsonArray) {
+			JsonObject json = element.getAsJsonObject();
+			JsonArray input = json.get("input").getAsJsonArray();
+			Pattern inputPattern = CustomRecipe.patternFromString(input.get(0).getAsString(), true);
+			Optional<PotionType> inputType = Optional.empty();
+			if (input.size() > 1) {
+				inputType = PotionType.parse(input.get(1).getAsString());
+			}
+			Pattern outputPattern = CustomRecipe.patternFromString(json.get("output").getAsString(), false);
+			ARROW_RECIPES.add(new ArrowRecipe(inputPattern, inputType, outputPattern.toString()));
+		}
+	}
+	private static final String CONFIG_FILE_ARROW_RECIPES = CONFIG_DIR + "arrow_recipes.json";
+	private static final String DEFAULT_ARROW_RECIPES = """
+[
+	{
+		"input": ["*"],
+		"output": "{1}"
+	}
+]""";
+
+	private void loadConfigFuel() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_FUEL, DEFAULT_FUEL).getAsJsonObject();
+		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+			Identifier identifier = new Identifier(entry.getKey());
+			if (!Registry.ITEM.containsId(identifier)) {
+				LOGGER.warn("Unknown fuel item " + identifier);
+				continue;
+			}
+			FUELS.put(identifier, entry.getValue().getAsInt());
+		}
+	}
+	private static final String CONFIG_FILE_FUEL = CONFIG_DIR + "fuel.json";
+	private static final String DEFAULT_FUEL = """
+{
+	"minecraft:blaze_powder": 20,
+	"lapis_lazuli": 10
+}""";
+
+	private static void putReplacementPotion(Map<Identifier, Potion> map, String key, String customId, PotionType type) {
+		Identifier identifier = new Identifier(key);
+		if (!Registry.POTION.containsId(identifier)) {
+			LOGGER.warn("Unknown key for potion replacement: " + key);
+			return;
+		}
+		if (hasCustomPotion(customId, Optional.of(type))) {
+			map.put(identifier, getOriginalPotion(customId, type));
+		} else {
+			LOGGER.warn("Unknown custom-potion-id for " + type + " potion replacement: " + customId);
+		}
+	}
+	private void loadConfigOther() {
+		JsonObject jsonObject = loadConfig(CONFIG_FILE_OTHER, DEFAULT_OTHER).getAsJsonObject();
+		if (jsonObject.has("witch_normal")) {
+			for (Entry<String, JsonElement> entry : jsonObject.get("witch_normal").getAsJsonObject().entrySet()) {
+				putReplacementPotion(WITCH_POTIONS_NORMAL, entry.getKey(), entry.getValue().getAsString(), PotionType.Normal);
+			}
+		}
+		if (jsonObject.has("witch_splash")) {
+			for (Entry<String, JsonElement> entry : jsonObject.get("witch_splash").getAsJsonObject().entrySet()) {
+				putReplacementPotion(WITCH_POTIONS_SPLASH, entry.getKey(), entry.getValue().getAsString(), PotionType.Splash);
+			}
+		}
+		if (jsonObject.has("witch_lingering")) {
+			for (Entry<String, JsonElement> entry : jsonObject.get("witch_lingering").getAsJsonObject().entrySet()) {
+				putReplacementPotion(WITCH_POTIONS_LINGERING, entry.getKey(), entry.getValue().getAsString(), PotionType.Lingering);
+			}
+		}
+		if (jsonObject.has("wandering_trader_night")) {
+			WANDERING_TRADER_POTION = getOriginalPotion(jsonObject.get("wandering_trader_night").getAsString(), PotionType.Normal);
+		}
+	}
+	private static final String CONFIG_FILE_OTHER = CONFIG_DIR + "other.json";
+	private static final String DEFAULT_OTHER = """
+{
+	"witch_normal": {
+		"fire_resistance": "fire_resistance_witch",
+		"water_breathing": "water_breathing",
+		"healing": "regeneration",
+		"swiftness": "swiftness"
+	},
+	"witch_splash": {
+		"weakness": "flames"
+	},
+	"witch_lingering": {
+		"slowness": "short_slowness",
+		"harming": "harming",
+		"poison": "poison",
+		"healing": "healing",
+		"regeneration": "healing"
+	},
+	"wandering_trader_night": "invisibility"
 }
 """;
 }

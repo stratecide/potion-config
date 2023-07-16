@@ -9,8 +9,8 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -21,25 +21,18 @@ import java.util.regex.Pattern;
 
 public class ModdedBrewingRecipeRegistry {
 
-    private static final List<Recipe> RECIPES = Lists.newArrayList();
+    /*private static final List<Recipe> RECIPES = Lists.newArrayList();
     private static final List<ArrowRecipe> ARROW_RECIPES = Lists.newArrayList();
 
-    private static boolean parsedRecipes = false;
-
-    private static void ensureRecipesParsed() {
-        if (parsedRecipes)
-            return;
-        parsedRecipes = true;
-
+    public static void parseRecipes(JsonObject config) {
         JsonObject ingredientGroups = null;
-        if (PotionConfigMod.config.has("ingredient_groups"))
-            ingredientGroups = PotionConfigMod.config.get("ingredient_groups").getAsJsonObject();
-        registerRecipes(ingredientGroups, PotionConfigMod.config.getAsJsonArray("recipes"));
-        registerArrowRecipes(PotionConfigMod.config.get("arrow_recipes").getAsJsonArray());
+        if (config.has("ingredient_groups"))
+            ingredientGroups = config.get("ingredient_groups").getAsJsonObject();
+        registerRecipes(ingredientGroups, config.getAsJsonArray("recipes"));
+        registerArrowRecipes(config.get("arrow_recipes").getAsJsonArray());
     }
 
     public static boolean isValidIngredient(ItemStack ingredient) {
-        ensureRecipesParsed();
         for (Recipe recipe : RECIPES) {
             if (recipe.ingredient.test(ingredient)) {
                 return true;
@@ -53,7 +46,6 @@ public class ModdedBrewingRecipeRegistry {
     }
 
     private static Recipe findRecipe(ItemStack inputPotion, ItemStack ingredient) {
-        ensureRecipesParsed();
         if (inputPotion == null || inputPotion.isEmpty() || !(inputPotion.getItem() instanceof PotionItem) || ingredient == null || ingredient.isEmpty())
             return null;
         String potionId = Registry.POTION.getId(PotionUtil.getPotion(inputPotion)).getPath();
@@ -67,66 +59,6 @@ public class ModdedBrewingRecipeRegistry {
         return null;
     }
 
-    public static void arrowIngredientTooltip(Potion outputPotion, List<Text> list) {
-        ensureRecipesParsed();
-        if (outputPotion == null || outputPotion == Potions.EMPTY)
-            return;
-        List<Text> options = new ArrayList<>();
-        for (ArrowRecipe recipe : ARROW_RECIPES) {
-            for (Identifier inputId : Registry.POTION.getIds()) {
-                String potionId = inputId.getPath();
-                if (potionId.matches(recipe.inputPotionPattern)) {
-                    Potion potion = generateOutputPotion(recipe.inputPotionPattern, recipe.outputPotionPattern, potionId);
-                    if (potion == outputPotion) {
-                        Potion inputPotion = Registry.POTION.get(inputId);
-                        Item pot = Items.POTION;
-                        if (PotionConfigMod.SPLASH_POTIONS.contains(inputPotion))
-                            pot = Items.SPLASH_POTION;
-                        else if (PotionConfigMod.LINGERING_POTIONS.contains(inputPotion))
-                            pot = Items.LINGERING_POTION;
-                        ItemStack potionStack = PotionUtil.setPotion(pot.getDefaultStack(), inputPotion);
-                        TranslatableText mutableText = new TranslatableText(Items.ARROW.getDefaultStack().getTranslationKey());
-                        mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
-                        options.add(mutableText.formatted(Formatting.DARK_GRAY));
-                    }
-                }
-            }
-        }
-        if (options.size() > 0)
-            list.add(options.get((int) ((new Date().getTime() / PotionConfigMod.TOOLTIP_MILLISECONDS) % options.size())));
-    }
-
-    public static void ingredientTooltip(Potion outputPotion, List<Text> list) {
-        ensureRecipesParsed();
-        if (outputPotion == null || outputPotion == Potions.EMPTY)
-            return;
-        List<Text> options = new ArrayList<>();
-        for (Recipe recipe : RECIPES) {
-            for (Identifier inputId : Registry.POTION.getIds()) {
-                String potionId = inputId.getPath();
-                if (potionId.matches(recipe.inputPotionPattern)) {
-                    Potion potion = generateOutputPotion(recipe.inputPotionPattern, recipe.outputPotionPattern, potionId);
-                    if (potion == outputPotion) {
-                        Potion inputPotion = Registry.POTION.get(inputId);
-                        Item pot = Items.POTION;
-                        if (PotionConfigMod.SPLASH_POTIONS.contains(inputPotion))
-                            pot = Items.SPLASH_POTION;
-                        else if (PotionConfigMod.LINGERING_POTIONS.contains(inputPotion))
-                            pot = Items.LINGERING_POTION;
-                        ItemStack potionStack = PotionUtil.setPotion(pot.getDefaultStack(), inputPotion);
-                        ItemStack[] ingredients = recipe.ingredient.getMatchingStacks();
-                        for (ItemStack ingredient : ingredients) {
-                            TranslatableText mutableText = new TranslatableText(ingredient.getTranslationKey());
-                            mutableText = new TranslatableText("potion-config.ingredients", new TranslatableText(potionStack.getTranslationKey()), mutableText);
-                            options.add(mutableText.formatted(Formatting.DARK_GRAY));
-                        }
-                    }
-                }
-            }
-        }
-        if (options.size() > 0)
-            list.add(options.get((int) ((new Date().getTime() / PotionConfigMod.TOOLTIP_MILLISECONDS) % options.size())));
-    }
 
     private static Potion generateOutputPotion(String inputPattern, String outputPattern, String inputPotionId) {
         Matcher matcher = Pattern.compile(inputPattern).matcher(inputPotionId);
@@ -205,27 +137,6 @@ public class ModdedBrewingRecipeRegistry {
         }
     }
 
-    private static Pattern patternFromString(String wildcardedString, boolean isInput) {
-        wildcardedString = wildcardedString.replace("\\", "\\\\")
-                .replace("^", "\\^")
-                .replace("$", "\\$")
-                .replace(".", "\\.")
-                .replace("|", "\\|")
-                .replace("?", "\\?")
-                .replace("+", "\\+")
-                .replace("(", "\\(")
-                .replace(")", "\\)")
-                .replace("[", "\\[")
-                .replace("]", "\\]");
-        if (!isInput)
-            wildcardedString = wildcardedString.replaceAll("\\{(\\d+)\\}", "($1)");
-        wildcardedString = wildcardedString.replace("{", "\\{")
-                .replace("}", "\\}");
-        if (isInput)
-            wildcardedString = wildcardedString.replace("*", "(.*)");
-        return Pattern.compile(wildcardedString);
-    }
-
     private static void registerArrowRecipes(JsonArray config) {
         for (Iterator<JsonElement> it = config.iterator(); it.hasNext(); ) {
             JsonObject element = (JsonObject) it.next();
@@ -254,7 +165,6 @@ public class ModdedBrewingRecipeRegistry {
     }
 
     private static ArrowRecipe findArrowRecipe(Potion inputPotion) {
-        ensureRecipesParsed();
         String potionId = Registry.POTION.getId(inputPotion).getPath();
         for (ArrowRecipe recipe : ARROW_RECIPES) {
             if (potionId.matches(recipe.inputPotionPattern)) {
@@ -283,5 +193,5 @@ public class ModdedBrewingRecipeRegistry {
     }
 
     record ArrowRecipe(String inputPotionPattern, String outputPotionPattern) {
-    }
+    }*/
 }

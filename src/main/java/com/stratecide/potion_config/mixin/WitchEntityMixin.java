@@ -7,6 +7,8 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -16,32 +18,22 @@ public abstract class WitchEntityMixin {
 
     @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/potion/PotionUtil;setPotion(Lnet/minecraft/item/ItemStack;Lnet/minecraft/potion/Potion;)Lnet/minecraft/item/ItemStack;"))
     private ItemStack redirectPotion(ItemStack stack, Potion potion) {
-        String potionId = "water_breathing";
-        if (potion == Potions.FIRE_RESISTANCE)
-            potionId = "fire_resistance";
-        if (potion == Potions.HEALING)
-            potionId = "healing";
-        if (potion == Potions.SWIFTNESS)
-            potionId = "swiftness";
-        return PotionUtil.setPotion(stack, PotionConfigMod.WITCH_POTIONS.get("normal-" + potionId));
+        Identifier potionId = Registry.POTION.getId(potion);
+        if (PotionConfigMod.WITCH_POTIONS_NORMAL.containsKey(potionId)) {
+            potion = PotionConfigMod.WITCH_POTIONS_NORMAL.get(potionId);
+        }
+        return PotionUtil.setPotion(stack, potion);
     }
 
     @Redirect(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/potion/PotionUtil;setPotion(Lnet/minecraft/item/ItemStack;Lnet/minecraft/potion/Potion;)Lnet/minecraft/item/ItemStack;"))
     private ItemStack redirectPotion2(ItemStack stack, Potion potion) {
-        String potionId = "harming";
-        if (potion == Potions.HEALING)
-            potionId = "healing";
-        if (potion == Potions.REGENERATION)
-            potionId = "regeneration";
-        if (potion == Potions.SLOWNESS)
-            potionId = "slowness";
-        if (potion == Potions.POISON)
-            potionId = "poison";
-        if (potion == Potions.WEAKNESS)
-            potionId = "weakness";
-        Potion replacement = PotionConfigMod.WITCH_POTIONS.get(PotionConfigMod.PREFIX_SPLASH + potionId);
-        if (PotionConfigMod.LINGERING_POTIONS.contains(replacement))
-            stack = new ItemStack(Items.SPLASH_POTION);
-        return PotionUtil.setPotion(stack, replacement);
+        Identifier potionId = Registry.POTION.getId(potion);
+        if (PotionConfigMod.WITCH_POTIONS_SPLASH.containsKey(potionId)) {
+            potion = PotionConfigMod.WITCH_POTIONS_SPLASH.get(potionId);
+        } else if (PotionConfigMod.WITCH_POTIONS_LINGERING.containsKey(potionId)) {
+            potion = PotionConfigMod.WITCH_POTIONS_LINGERING.get(potionId);
+            return PotionUtil.setPotion(new ItemStack(Items.LINGERING_POTION), potion);
+        }
+        return PotionUtil.setPotion(stack, potion);
     }
 }

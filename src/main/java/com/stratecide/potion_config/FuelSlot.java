@@ -17,7 +17,7 @@ public class FuelSlot extends Slot {
 
     public static boolean matches(ItemStack stack) {
         Identifier id = Registry.ITEM.getId(stack.getItem());
-        return PotionConfigMod.FUELS.containsKey(id.toString());
+        return PotionConfigMod.FUELS.containsKey(id);
     }
 
     public int getMaxItemCount() {

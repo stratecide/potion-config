@@ -1,5 +1,18 @@
 {
   "potion-config.ingredients": "(%s + %s)",
+  "potion-config.potion.withChance": "%s (%d%%)",
+  "potion-config.potion.afterEffect": "Has additional effects after its normal effects end",
+  "potion-config.potion.notBrewable": "Not Brewable",
+  "potion-config.potion.potionRecipe": "Can be brewed by combining",
+  "potion-config.potion.notCraftable": "Uncraftable",
+  "potion-config.potion.arrowRecipe": "Craftable from",
+
+  "effect.potion-config.health_boost": "Health Boost",
+  "effect.potion-config.health_drop": "Health Drop",
+  "effect.potion-config.creative_flight": "Creative Flight",
+  "effect.potion-config.knockback_resistance": "Knockback Resistance",
+  "effect.potion-config.flames": "Sets on Fire",
+  "effect.potion-config.milk": "Removes Status Effects",
 
   "item.minecraft.tipped_arrow.effect.arrow-water": "Arrow of Splashing",
   "item.minecraft.tipped_arrow.effect.arrow-mundane": "Tipped Arrow",
