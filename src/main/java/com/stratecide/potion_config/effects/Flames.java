@@ -15,7 +15,7 @@ public class Flames extends CustomStatusEffect {
 
     @Override
     public void applyUpdateEffect(LivingEntity entity, int amplifier) {
-        if (!entity.world.isClient && !entity.isFireImmune() && !entity.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+        if (!entity.getWorld().isClient && !entity.isFireImmune() && !entity.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
             entity.setOnFireFor(1 + amplifier);
         }
     }

@@ -14,7 +14,7 @@ public class Milk extends CustomStatusEffect {
 
     @Override
     public void applyUpdateEffect(LivingEntity entity, int amplifier) {
-        if (!entity.world.isClient) {
+        if (!entity.getWorld().isClient) {
             entity.clearStatusEffects();
         }
     }

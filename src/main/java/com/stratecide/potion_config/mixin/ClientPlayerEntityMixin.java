@@ -17,12 +17,12 @@ public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity {
         super(world, profile);
     }
 
-    @ModifyConstant(method = "updateNausea", constant = @Constant(floatValue = 1.0f, ordinal = 2))
+    @ModifyConstant(method = "updateNausea", constant = @Constant(floatValue = 1.0f))
     private float respectNauseaStrength(float constant) {
-        return Math.min(constant, (1.0f + (float) this.getStatusEffect(StatusEffects.NAUSEA).getAmplifier()) / 4.0f);
-    }
-    @ModifyConstant(method = "updateNausea", constant = @Constant(floatValue = 1.0f, ordinal = 3))
-    private float respectNauseaStrength1(float constant) {
-        return respectNauseaStrength(constant);
+        int amplifier = 0;
+        if (this.hasStatusEffect(StatusEffects.NAUSEA)) {
+            amplifier = this.getStatusEffect(StatusEffects.NAUSEA).getAmplifier();
+        }
+        return Math.min(constant, (1.0f + (float) amplifier) / 4.0f);
     }
 }

@@ -42,7 +42,7 @@ public abstract class AreaEffectCloudEntityMixin extends Entity {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void updateColor(CallbackInfo ci) {
-        if (this.world.isClient) {
+        if (this.getWorld().isClient) {
             return;
         }
         CustomPotion potion = PotionConfigMod.getLingeringPotion(this.getPotion());

@@ -49,7 +49,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void updateColor(CallbackInfo ci) {
-        if (this.world.isClient || colorSet) {
+        if (this.getWorld().isClient || colorSet) {
             return;
         }
         CustomPotion potion = PotionConfigMod.getArrowPotion(this.potion);

@@ -3,7 +3,7 @@ package com.stratecide.potion_config.mixin;
 import com.stratecide.potion_config.ArrowRecipe;
 import com.stratecide.potion_config.PotionConfigMod;
 import com.stratecide.potion_config.PotionType;
-import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.PotionItem;
@@ -20,16 +20,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(TippedArrowRecipe.class)
 public abstract class TippedArrowRecipeMixin {
 
-    @Inject(method = "matches", at = @At("HEAD"), cancellable = true)
-    void injectMatches(CraftingInventory craftingInventory, World world, CallbackInfoReturnable<Boolean> cir) {
-        if (craftingInventory.getWidth() != 3 || craftingInventory.getHeight() != 3) {
+    @Inject(method = "matches(Lnet/minecraft/inventory/RecipeInputInventory;Lnet/minecraft/world/World;)Z", at = @At("HEAD"), cancellable = true)
+    void injectMatches(RecipeInputInventory recipeInputInventory, World world, CallbackInfoReturnable<Boolean> cir) {
+        if (recipeInputInventory.getWidth() != 3 || recipeInputInventory.getHeight() != 3) {
             cir.setReturnValue(false);
         }
         Potion potion = null;
         PotionType potionType = null;
-        for(int i = 0; i < craftingInventory.getWidth(); ++i) {
-            for(int j = 0; j < craftingInventory.getHeight(); ++j) {
-                ItemStack itemStack = craftingInventory.getStack(i + j * craftingInventory.getWidth());
+        for(int i = 0; i < recipeInputInventory.getWidth(); ++i) {
+            for(int j = 0; j < recipeInputInventory.getHeight(); ++j) {
+                ItemStack itemStack = recipeInputInventory.getStack(i + j * recipeInputInventory.getWidth());
                 if (itemStack.isEmpty()) {
                     cir.setReturnValue(false);
                     return;
@@ -60,9 +60,9 @@ public abstract class TippedArrowRecipeMixin {
         cir.setReturnValue(false);
     }
 
-    @Inject(method = "craft(Lnet/minecraft/inventory/CraftingInventory;Lnet/minecraft/registry/DynamicRegistryManager;)Lnet/minecraft/item/ItemStack;", at = @At("HEAD"), cancellable = true)
-    void injectCraft(CraftingInventory craftingInventory, DynamicRegistryManager dynamicRegistryManager, CallbackInfoReturnable<ItemStack> cir) {
-        ItemStack itemStack = craftingInventory.getStack(1 + craftingInventory.getWidth());
+    @Inject(method = "craft(Lnet/minecraft/inventory/RecipeInputInventory;Lnet/minecraft/registry/DynamicRegistryManager;)Lnet/minecraft/item/ItemStack;", at = @At("HEAD"), cancellable = true)
+    void injectCraft(RecipeInputInventory recipeInputInventory, DynamicRegistryManager dynamicRegistryManager, CallbackInfoReturnable<ItemStack> cir) {
+        ItemStack itemStack = recipeInputInventory.getStack(1 + recipeInputInventory.getWidth());
         Potion potion = PotionUtil.getPotion(itemStack);
         PotionType potionType = PotionType.from((PotionItem) itemStack.getItem());
         for (ArrowRecipe recipe : PotionConfigMod.ARROW_RECIPES) {
