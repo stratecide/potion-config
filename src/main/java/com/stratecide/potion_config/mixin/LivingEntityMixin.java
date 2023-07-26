@@ -100,10 +100,10 @@ public abstract class LivingEntityMixin extends Entity {
     }
 
     @Inject(method = "getJumpBoostVelocityModifier", at = @At("TAIL"), cancellable = true)
-    private void reduceJumpHeight(CallbackInfoReturnable<Double> cir) {
+    private void reduceJumpHeight(CallbackInfoReturnable<Float> cir) {
         if (hasStatusEffect(CustomStatusEffect.JUMP_DROP)) {
-            double reduction = 0.1 * (double)(getStatusEffect(CustomStatusEffect.JUMP_DROP).getAmplifier() + 1);
-            cir.setReturnValue(cir.getReturnValueD() - reduction);
+            float reduction = 0.1f * (float)(getStatusEffect(CustomStatusEffect.JUMP_DROP).getAmplifier() + 1);
+            cir.setReturnValue(cir.getReturnValue() - reduction);
         }
     }
 }
