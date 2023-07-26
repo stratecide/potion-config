@@ -6,10 +6,10 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.BrewingStandBlockEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -41,7 +41,7 @@ public abstract class BrewingStandBlockEntityMixin extends BlockEntity {
     void injectIsValid(int slot, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if (slot == 4) {
             // fuel
-            Identifier id = Registry.ITEM.getId(stack.getItem());
+            Identifier id = Registries.ITEM.getId(stack.getItem());
             cir.setReturnValue(PotionConfigMod.FUELS.containsKey(id));
         }
     }
@@ -51,7 +51,7 @@ public abstract class BrewingStandBlockEntityMixin extends BlockEntity {
         BrewingStandBlockEntityMixin entity = (BrewingStandBlockEntityMixin) (BlockEntity) blockEntity;
         if (entity.getFuel() <= 0 && entity.brewTime <= 0) {
             ItemStack itemStack = entity.getInventory().get(4);
-            Identifier id = Registry.ITEM.getId(itemStack.getItem());
+            Identifier id = Registries.ITEM.getId(itemStack.getItem());
             if (PotionConfigMod.FUELS.containsKey(id)) {
                 entity.setFuel(PotionConfigMod.FUELS.get(id));
                 itemStack.decrement(1);

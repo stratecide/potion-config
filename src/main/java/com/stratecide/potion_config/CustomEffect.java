@@ -10,17 +10,15 @@ import com.stratecide.potion_config.effects.RandomChoice;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.StringHelper;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class CustomEffect {
     public final StatusEffect effect;
@@ -36,8 +34,8 @@ public class CustomEffect {
             for (JsonElement option : jsonObject.get("options").getAsJsonArray()) {
                 JsonObject opt = option.getAsJsonObject();
                 Identifier identifier = new Identifier(opt.get("key").getAsString());
-                if (Registry.STATUS_EFFECT.containsId(identifier)) {
-                    StatusEffect eff = Registry.STATUS_EFFECT.get(identifier);
+                if (Registries.STATUS_EFFECT.containsId(identifier)) {
+                    StatusEffect eff = Registries.STATUS_EFFECT.get(identifier);
                     effects.add(new CustomEffect(eff, opt));
                 } else {
                     throw new RuntimeException("Unknown status effect " + identifier);
@@ -49,8 +47,8 @@ public class CustomEffect {
             for (JsonElement option : jsonObject.get("children").getAsJsonArray()) {
                 JsonObject opt = option.getAsJsonObject();
                 Identifier identifier = new Identifier(opt.get("key").getAsString());
-                if (Registry.STATUS_EFFECT.containsId(identifier)) {
-                    StatusEffect eff = Registry.STATUS_EFFECT.get(identifier);
+                if (Registries.STATUS_EFFECT.containsId(identifier)) {
+                    StatusEffect eff = Registries.STATUS_EFFECT.get(identifier);
                     opt.addProperty("chance", 1.0);
                     effects.add(new CustomEffect(eff, opt));
                 } else {

@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(ClientPlayerEntity.class)
 public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity {
-    public ClientPlayerEntityMixin(ClientWorld world, GameProfile profile, @Nullable PlayerPublicKey publicKey) {
-        super(world, profile, publicKey);
+    public ClientPlayerEntityMixin(ClientWorld world, GameProfile profile) {
+        super(world, profile);
     }
 
     @ModifyConstant(method = "updateNausea", constant = @Constant(floatValue = 1.0f, ordinal = 2))

@@ -4,7 +4,7 @@ import net.minecraft.item.*;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.registry.Registries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +94,7 @@ public class CustomRecipe {
             }
             random -= option.weight;
         }
-        PotionConfigMod.LOGGER.warn("No valid output found for potion-recipe with input '" + this.input + "' for " + inputType + " potion " + Registry.POTION.getId(potion));
+        PotionConfigMod.LOGGER.warn("No valid output found for potion-recipe with input '" + this.input + "' for " + inputType + " potion " + Registries.POTION.getId(potion));
         return new ItemStack(Items.POTION);
     }
 

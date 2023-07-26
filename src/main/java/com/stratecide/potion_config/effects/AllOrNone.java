@@ -8,11 +8,12 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class AllOrNone extends CustomStatusEffect {
         boolean isHarmful = children.stream().anyMatch(customEffect -> StatusEffectCategory.HARMFUL.equals(customEffect.effect.getCategory()));
         StatusEffectCategory category = (isBeneficial == isHarmful) ? StatusEffectCategory.NEUTRAL : isBeneficial ? StatusEffectCategory.BENEFICIAL : StatusEffectCategory.HARMFUL;
         int id = ++ID;
-        return Registry.register(Registry.STATUS_EFFECT, generateIdentifier(id), new AllOrNone(category, id, children));
+        return Registry.register(Registries.STATUS_EFFECT, generateIdentifier(id), new AllOrNone(category, id, children));
     }
 
     public boolean isInstant() {

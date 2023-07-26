@@ -13,8 +13,9 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,19 +87,19 @@ public class PotionConfigMod implements ModInitializer {
 	public static final Map<String, List<ArrowInput>> ARROW_INPUTS = new HashMap<>();
 
 	public static boolean hasNormalPotion(Potion potion) {
-		return NORMAL_POTIONS.containsKey(Registry.POTION.getId(potion));
+		return NORMAL_POTIONS.containsKey(Registries.POTION.getId(potion));
 	}
 	public static CustomPotion getNormalPotion(Potion replaced) {
 		return getPotion(NORMAL_POTIONS, replaced, MYSTERY_NORMAL_POTION, "normal");
 	}
 	public static boolean hasSplashPotion(Potion potion) {
-		return SPLASH_POTIONS.containsKey(Registry.POTION.getId(potion));
+		return SPLASH_POTIONS.containsKey(Registries.POTION.getId(potion));
 	}
 	public static CustomPotion getSplashPotion(Potion replaced) {
 		return getPotion(SPLASH_POTIONS, replaced, MYSTERY_SPLASH_POTION, "splash");
 	}
 	public static boolean hasLingeringPotion(Potion potion) {
-		return LINGERING_POTIONS.containsKey(Registry.POTION.getId(potion));
+		return LINGERING_POTIONS.containsKey(Registries.POTION.getId(potion));
 	}
 	public static CustomPotion getLingeringPotion(Potion replaced) {
 		return getPotion(LINGERING_POTIONS, replaced, MYSTERY_LINGERING_POTION, "lingering");
@@ -107,14 +108,14 @@ public class PotionConfigMod implements ModInitializer {
 		return ARROW_POTIONS.containsValue(id);
 	}
 	public static boolean hasArrowPotion(Potion potion) {
-		return ARROW_POTIONS.containsKey(Registry.POTION.getId(potion));
+		return ARROW_POTIONS.containsKey(Registries.POTION.getId(potion));
 	}
 	public static CustomPotion getArrowPotion(Potion replaced) {
 		return getPotion(ARROW_POTIONS, replaced, MYSTERY_ARROW, "arrow");
 	}
 
 	private static CustomPotion getPotion(Map<Identifier, String> map, Potion replaced, String mystery, String loggingKey) {
-		Identifier identifier = Registry.POTION.getId(replaced);
+		Identifier identifier = Registries.POTION.getId(replaced);
 		String customId = map.get(identifier);
 		if (customId != null) {
 			return getCustomPotion(customId);
@@ -130,11 +131,11 @@ public class PotionConfigMod implements ModInitializer {
 			case Lingering -> LINGERING_POTIONS;
 			default -> NORMAL_POTIONS;
 		};
-		Identifier identifier = Registry.POTION.getId(potion);
+		Identifier identifier = Registries.POTION.getId(potion);
 		return map.get(identifier);
 	}
 	public static String getCustomArrowPotionId(Potion potion) {
-		Identifier identifier = Registry.POTION.getId(potion);
+		Identifier identifier = Registries.POTION.getId(potion);
 		return ARROW_POTIONS.get(identifier);
 	}
 
@@ -146,7 +147,7 @@ public class PotionConfigMod implements ModInitializer {
 		};
 		for (Map.Entry<Identifier, String> entry : map.entrySet()) {
 			if (entry.getValue().equals(customId)) {
-				return Registry.POTION.get(entry.getKey());
+				return Registries.POTION.get(entry.getKey());
 			}
 		}
 		return Potions.EMPTY;
@@ -154,7 +155,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static Potion getOriginalArrowPotion(String customId) {
 		for (Map.Entry<Identifier, String> entry : ARROW_POTIONS.entrySet()) {
 			if (entry.getValue().equals(customId)) {
-				return Registry.POTION.get(entry.getKey());
+				return Registries.POTION.get(entry.getKey());
 			}
 		}
 		return Potions.EMPTY;
@@ -235,9 +236,6 @@ public class PotionConfigMod implements ModInitializer {
 		if (json.has("stack_size_lingering")) {
 			STACK_SIZE_LINGERING = json.get("stack_size_lingering").getAsInt();
 		}
-		if (json.has("glint")) {
-			GLINT = json.get("glint").getAsBoolean();
-		}
 		if (json.has("hide_effects_below_chance")) {
 			HIDE_EFFECTS_BELOW_CHANCE = json.get("hide_effects_below_chance").getAsDouble();
 		}
@@ -269,7 +267,6 @@ public class PotionConfigMod implements ModInitializer {
 	"stack_size": 16,
 	"stack_size_splash": 4,
 	"stack_size_lingering": 3,
-	"glint": false,
 	"hide_effects_below_chance": 0.3,
 	"hide_after_effects": false,
 	"default_duration": 3600,
@@ -285,7 +282,7 @@ public class PotionConfigMod implements ModInitializer {
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			String id = entry.getKey();
 			Identifier afterEffectId = new Identifier(MOD_ID, AFTER_EFFECT_PREFIX + id);
-			Registry.register(Registry.STATUS_EFFECT, afterEffectId, new AfterEffect(id));
+			Registry.register(Registries.STATUS_EFFECT, afterEffectId, new AfterEffect(id));
 			CustomPotion potion = CustomPotion.parse(entry.getValue().getAsJsonObject());
 			CUSTOM_POTIONS.put(id, potion);
 		}
@@ -667,8 +664,8 @@ public class PotionConfigMod implements ModInitializer {
 			return new Identifier(replaces);
 		}
 		Identifier identifier = new Identifier(MOD_ID, id);
-		if (!Registry.POTION.containsId(identifier)) {
-			Registry.register(Registry.POTION, identifier, new Potion());
+		if (!Registries.POTION.containsId(identifier)) {
+			Registry.register(Registries.POTION, identifier, new Potion());
 		}
 		return identifier;
 	}
@@ -841,7 +838,7 @@ public class PotionConfigMod implements ModInitializer {
 			Set<Item> items = new HashSet<>();
 			for (JsonElement element : entry.getValue().getAsJsonArray()) {
 				Identifier identifier = new Identifier(element.getAsString());
-				Item item = Registry.ITEM.get(identifier);
+				Item item = Registries.ITEM.get(identifier);
 				if (item == Items.AIR) {
 					LOGGER.warn("Missing item in ingredient group '" + groupId + "': " + identifier);
 				} else {
@@ -886,7 +883,7 @@ public class PotionConfigMod implements ModInitializer {
 			String ingredientId = input.get(0).getAsString();
 			Ingredient ingredient = itemGroups.get(ingredientId);
 			if (ingredient == null) {
-				Item item = Registry.ITEM.get(new Identifier(ingredientId));
+				Item item = Registries.ITEM.get(new Identifier(ingredientId));
 				if (item == Items.AIR)
 					throw new AssertionError("Invalid ingredient identifier : " + ingredientId);
 				ingredient = Ingredient.ofItems(item);
@@ -1213,7 +1210,7 @@ public class PotionConfigMod implements ModInitializer {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_FUEL, DEFAULT_FUEL).getAsJsonObject();
 		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			Identifier identifier = new Identifier(entry.getKey());
-			if (!Registry.ITEM.containsId(identifier)) {
+			if (!Registries.ITEM.containsId(identifier)) {
 				LOGGER.warn("Unknown fuel item " + identifier);
 				continue;
 			}
@@ -1229,7 +1226,7 @@ public class PotionConfigMod implements ModInitializer {
 
 	private static void putReplacementPotion(Map<Identifier, Potion> map, String key, String customId, PotionType type) {
 		Identifier identifier = new Identifier(key);
-		if (!Registry.POTION.containsId(identifier)) {
+		if (!Registries.POTION.containsId(identifier)) {
 			LOGGER.warn("Unknown key for potion replacement: " + key);
 			return;
 		}

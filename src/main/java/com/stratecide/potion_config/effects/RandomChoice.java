@@ -10,17 +10,15 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RandomChoice extends CustomStatusEffect {
@@ -43,7 +41,7 @@ public class RandomChoice extends CustomStatusEffect {
         boolean isHarmful = options.stream().anyMatch(customEffect -> StatusEffectCategory.HARMFUL.equals(customEffect.effect.getCategory()));
         StatusEffectCategory category = (isBeneficial == isHarmful) ? StatusEffectCategory.NEUTRAL : isBeneficial ? StatusEffectCategory.BENEFICIAL : StatusEffectCategory.HARMFUL;
         int id = ++ID;
-        return Registry.register(Registry.STATUS_EFFECT, generateIdentifier(id), new RandomChoice(category, id, options));
+        return Registry.register(Registries.STATUS_EFFECT, generateIdentifier(id), new RandomChoice(category, id, options));
     }
 
     public boolean isInstant() {

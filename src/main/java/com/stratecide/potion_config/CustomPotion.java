@@ -11,11 +11,11 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +55,8 @@ public class CustomPotion {
                     break;
                 default:
                     Identifier identifier = new Identifier(key);
-                    if (Registry.STATUS_EFFECT.containsId(identifier)) {
-                        StatusEffect effect = Registry.STATUS_EFFECT.get(identifier);
+                    if (Registries.STATUS_EFFECT.containsId(identifier)) {
+                        StatusEffect effect = Registries.STATUS_EFFECT.get(identifier);
                         effects.add(new CustomEffect(effect, value.getAsJsonObject()));
                     } else {
                         throw new RuntimeException("Unknown status effect " + identifier);
@@ -97,7 +97,7 @@ public class CustomPotion {
             }
         }
         if (result.size() > 0 && afterEffects.isPresent()) {
-            StatusEffect effect = Registry.STATUS_EFFECT.get(afterEffects.get());
+            StatusEffect effect = Registries.STATUS_EFFECT.get(afterEffects.get());
             if (effect instanceof AfterEffect) {
                 result.add(new StatusEffectInstance(effect, duration, 0, false, false, false));
             }

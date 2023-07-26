@@ -1,12 +1,10 @@
 package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.CustomRecipe;
-import com.stratecide.potion_config.ModdedBrewingRecipeRegistry;
 import com.stratecide.potion_config.PotionConfigMod;
 import com.stratecide.potion_config.PotionType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.PotionItem;
-import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.recipe.BrewingRecipeRegistry;
 import org.spongepowered.asm.mixin.Mixin;

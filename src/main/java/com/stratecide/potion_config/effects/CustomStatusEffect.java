@@ -9,10 +9,10 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +67,6 @@ public class CustomStatusEffect extends StatusEffect {
     // moves camera in random directions, may change main-hand slot as if the scroll-wheel was used
     public static final CustomStatusEffect DRUNK = register("drunk", new Drunk(StatusEffectCategory.HARMFUL, 0x448822));
     private static CustomStatusEffect register(String id, CustomStatusEffect entry) {
-        return Registry.register(Registry.STATUS_EFFECT, new Identifier(PotionConfigMod.MOD_ID, id), entry);
+        return Registry.register(Registries.STATUS_EFFECT, new Identifier(PotionConfigMod.MOD_ID, id), entry);
     }
 }

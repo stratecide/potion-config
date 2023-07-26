@@ -4,10 +4,10 @@ import com.stratecide.potion_config.PotionColor;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 public class Particles extends CustomStatusEffect {
     private static int ID = 0;
@@ -26,7 +26,7 @@ public class Particles extends CustomStatusEffect {
 
     public Particles withColor(PotionColor color) {
         int id = ++ID;
-        return Registry.register(Registry.STATUS_EFFECT, generateIdentifier(id), new Particles(this.getCategory(), id, color));
+        return Registry.register(Registries.STATUS_EFFECT, generateIdentifier(id), new Particles(this.getCategory(), id, color));
     }
 
     public void tick(LivingEntity entity, int intensity) {
