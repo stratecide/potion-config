@@ -44,14 +44,9 @@ public abstract class PotionItemMixin extends Item {
     @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
     void properTranslationKey(ItemStack stack, CallbackInfoReturnable<String> cir) {
         Potion potion = PotionUtil.getPotion(stack);
-        Identifier identifier = Registry.POTION.getId(potion);
         PotionType type = PotionType.from((PotionItem) (Object) this);
-        boolean exists = switch (type) {
-            case Normal -> PotionConfigMod.hasNormalPotion(potion);
-            case Splash -> PotionConfigMod.hasSplashPotion(potion);
-            case Lingering -> PotionConfigMod.hasLingeringPotion(potion);
-        };
-        cir.setReturnValue(this.getTranslationKey() + ".effect." + (exists ? identifier.getPath() : "mystery"));
+        String postfix = PotionConfigMod.getCustomPotionId(type, potion);
+        cir.setReturnValue(this.getTranslationKey() + ".effect." + (postfix != null ? postfix : "mystery"));
     }
 
     @Redirect(method = "finishUsing", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;insertStack(Lnet/minecraft/item/ItemStack;)Z"))

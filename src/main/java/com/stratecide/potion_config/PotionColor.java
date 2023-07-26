@@ -13,7 +13,7 @@ public class PotionColor {
 
     public static PotionColor neutral() {
         List<Color> colors = new ArrayList<>();
-        colors.add(Color.parse("385DC6"));
+        colors.add(new Color(0, 0, -1));
         return new PotionColor(colors, 1);
     }
 

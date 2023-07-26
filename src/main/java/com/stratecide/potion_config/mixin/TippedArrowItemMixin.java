@@ -29,9 +29,8 @@ public abstract class TippedArrowItemMixin extends Item {
     @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
     void properTranslationKey(ItemStack stack, CallbackInfoReturnable<String> cir) {
         Potion potion = PotionUtil.getPotion(stack);
-        Identifier identifier = Registry.POTION.getId(potion);
-        boolean exists = PotionConfigMod.hasArrowPotion(potion);
-        cir.setReturnValue(this.getTranslationKey() + ".effect." + (exists ? identifier.getPath() : "mystery"));
+        String postfix = PotionConfigMod.getCustomArrowPotionId(potion);
+        cir.setReturnValue(this.getTranslationKey() + ".effect." + (postfix != null ? postfix : "mystery"));
     }
 
     @Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)

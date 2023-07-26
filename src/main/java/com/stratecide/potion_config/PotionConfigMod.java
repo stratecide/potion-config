@@ -40,7 +40,6 @@ public class PotionConfigMod implements ModInitializer {
 			case Splash -> SPLASH_POTIONS.containsValue(id);
 			case Lingering -> LINGERING_POTIONS.containsValue(id);
 		};
-		// why is this needed?
 	}
 	public static CustomPotion getCustomPotion(String id) {
 		if (!CUSTOM_POTIONS.containsKey(id)) {
@@ -179,7 +178,7 @@ public class PotionConfigMod implements ModInitializer {
 	private static JsonElement loadConfig(String filename, String defaultContent) {
 		File file = new File(filename);
 		String data;
-		if (!file.exists() || true) {
+		if (!file.exists()) {
 			file.getParentFile().mkdirs();
 			data = defaultContent;
 			try (FileWriter writer = new FileWriter(filename)) {

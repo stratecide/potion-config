@@ -53,14 +53,8 @@ public abstract class BrewingRecipeRegistryMixin {
         }
     }
 
-    @Inject(method = "registerDefaults", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/BrewingRecipeRegistry;registerPotionRecipe(Lnet/minecraft/potion/Potion;Lnet/minecraft/item/Item;Lnet/minecraft/potion/Potion;)V"), cancellable = true)
+    @Inject(method = "registerDefaults", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/BrewingRecipeRegistry;registerItemRecipe(Lnet/minecraft/item/Item;Lnet/minecraft/item/Item;Lnet/minecraft/item/Item;)V"), cancellable = true)
     private static void blockDefaultRecipes(CallbackInfo ci) {
         ci.cancel();
     }
-
-    /*@Inject(method = "isBrewable", at = @At("HEAD"), cancellable = true)
-    private static void injectIsBrewable(Potion potion, CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(PotionConfigMod.ARROW_POTIONS.contains(potion));
-    }*/
-
 }
