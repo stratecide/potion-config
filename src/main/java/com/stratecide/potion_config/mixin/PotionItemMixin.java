@@ -2,12 +2,14 @@ package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.PotionConfigMod;
 
+import com.stratecide.potion_config.PotionType;
 import net.minecraft.block.DirtPathBlock;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.*;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.registry.DefaultedRegistry;
 import net.minecraft.util.registry.Registry;
@@ -39,14 +41,18 @@ public abstract class PotionItemMixin extends Item {
         return settings;
     }
 
-    /*@Redirect(method = "appendStacks", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/registry/DefaultedRegistry;iterator()Ljava/util/Iterator;"))
-    private Iterator<Potion> redirectPotionIterator(DefaultedRegistry defaultedRegistry) {
-        if (((Object) this) instanceof SplashPotionItem)
-            return PotionConfigMod.SPLASH_POTIONS.iterator();
-        if (((Object) this) instanceof LingeringPotionItem)
-            return PotionConfigMod.LINGERING_POTIONS.iterator();
-        return PotionConfigMod.NORMAL_POTIONS.iterator();
-    }*/
+    @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
+    void properTranslationKey(ItemStack stack, CallbackInfoReturnable<String> cir) {
+        Potion potion = PotionUtil.getPotion(stack);
+        Identifier identifier = Registry.POTION.getId(potion);
+        PotionType type = PotionType.from((PotionItem) (Object) this);
+        boolean exists = switch (type) {
+            case Normal -> PotionConfigMod.hasNormalPotion(potion);
+            case Splash -> PotionConfigMod.hasSplashPotion(potion);
+            case Lingering -> PotionConfigMod.hasLingeringPotion(potion);
+        };
+        cir.setReturnValue(this.getTranslationKey() + ".effect." + (exists ? identifier.getPath() : "mystery"));
+    }
 
     @Redirect(method = "finishUsing", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;insertStack(Lnet/minecraft/item/ItemStack;)Z"))
     boolean dropBottleIfNotEnoughInventory(PlayerInventory playerInventory, ItemStack stack) {

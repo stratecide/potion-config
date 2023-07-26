@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import com.stratecide.potion_config.effects.AfterEffect;
+import com.stratecide.potion_config.effects.CustomStatusEffect;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
@@ -77,8 +78,8 @@ public class CustomPotion {
         this.effects = effects;
     }
 
-    public int getColor() {
-        return color.getColor();
+    public int getColor(boolean inBottle) {
+        return color.getColor(inBottle);
     }
 
     public List<StatusEffectInstance> generateEffectInstances() {
@@ -88,7 +89,11 @@ public class CustomPotion {
         List<StatusEffectInstance> result = new ArrayList<>();
         for (CustomEffect effect : effects) {
             if (Math.random() < effect.chance) {
-                result.add(new StatusEffectInstance(effect.effect, duration, effect.strength - 1, ambient, showParticles, showIcon && effect.showIcon()));
+                if (effect.effect instanceof CustomStatusEffect) {
+                    ((CustomStatusEffect) effect.effect).addInstances(result, duration, effect.strength - 1, ambient, showParticles, showIcon);
+                } else {
+                    result.add(new StatusEffectInstance(effect.effect, duration, effect.strength - 1, ambient, showParticles, showIcon && effect.showIcon()));
+                }
             }
         }
         if (result.size() > 0 && afterEffects.isPresent()) {

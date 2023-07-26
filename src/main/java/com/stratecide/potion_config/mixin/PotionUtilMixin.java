@@ -78,7 +78,7 @@ public abstract class PotionUtilMixin {
         } else {
             potion = PotionConfigMod.getNormalPotion(vanillaPotion);
         }
-        cir.setReturnValue(potion.getColor());
+        cir.setReturnValue(potion.getColor(true));
     }
 
     // TODO: other getColor methods

@@ -40,8 +40,19 @@ public class PotionColor {
         this.framesPerColor = framesPerColor;
     }
 
-    public int getColor() {
+    public int getColor(boolean inBottle) {
         if (framesPerColor <= 0) {
+            if (inBottle) {
+                int red = 0;
+                int green = 0;
+                int blue = 0;
+                for (Color color : colors) {
+                    red += color.red;
+                    green += color.green;
+                    blue += color.blue;
+                }
+                return 0x10000 * (red / colors.size()) + 0x100 * (green / colors.size()) + (blue / colors.size());
+            }
             int colorIndex = (int) (Math.random() * (double) colors.size());
             return colors.get(colorIndex).interpolate(colors.get(colorIndex), 0);
         }

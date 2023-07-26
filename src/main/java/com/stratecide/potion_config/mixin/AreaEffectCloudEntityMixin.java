@@ -46,7 +46,7 @@ public abstract class AreaEffectCloudEntityMixin extends Entity {
             return;
         }
         CustomPotion potion = PotionConfigMod.getLingeringPotion(this.getPotion());
-        int color = potion.getColor();
+        int color = potion.getColor(false);
         if (color != getColor()) {
             setColor(color);
         }

@@ -35,7 +35,7 @@ public class Particles extends CustomStatusEffect {
             particlesPerSecond /= 4.0;
         while (particlesPerSecond >= 20.0 || particlesPerSecond > 0 && entity.getRandom().nextDouble() < particlesPerSecond / 20.0) {
             particlesPerSecond -= 20.0;
-            int color = this.color.getColor();
+            int color = this.color.getColor(false);
             double red = (double) (color >> 16 & 0xFF) / 255.0;
             double green = (double) (color >> 8 & 0xFF) / 255.0;
             double blue = (double) (color & 0xFF) / 255.0;
