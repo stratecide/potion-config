@@ -2,7 +2,6 @@ package com.stratecide.potion_config;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.datafixers.util.Pair;
 import com.stratecide.potion_config.effects.AllOrNone;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
@@ -10,17 +9,16 @@ import com.stratecide.potion_config.effects.RandomChoice;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.StringHelper;
 import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class CustomEffect {
     public final StatusEffect effect;

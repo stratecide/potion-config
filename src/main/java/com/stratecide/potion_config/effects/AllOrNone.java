@@ -1,7 +1,6 @@
 package com.stratecide.potion_config.effects;
 
 import com.google.common.collect.Lists;
-import com.mojang.datafixers.util.Pair;
 import com.stratecide.potion_config.CustomEffect;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -12,6 +11,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;

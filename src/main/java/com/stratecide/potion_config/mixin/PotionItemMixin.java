@@ -33,7 +33,7 @@ public abstract class PotionItemMixin extends Item {
     private static Item.Settings increaseStackSize(Item.Settings settings) {
         if (((ItemSettingsMixin) settings).getMaxCount() == 1) {
             try {
-                return settings.maxCount(PotionConfigMod.STACK_SIZE);
+                return settings.maxCount(PotionConfigMod.STACK_SIZE).recipeRemainder(Items.GLASS_BOTTLE);
             } catch (RuntimeException e) {
                 return settings.maxDamage(0);
             }

@@ -1,26 +1,21 @@
 package com.stratecide.potion_config.effects;
 
 import com.google.common.collect.Lists;
-import com.mojang.datafixers.util.Pair;
 import com.stratecide.potion_config.CustomEffect;
-import com.stratecide.potion_config.PotionColor;
 import com.stratecide.potion_config.PotionConfigMod;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RandomChoice extends CustomStatusEffect {
@@ -52,14 +47,11 @@ public class RandomChoice extends CustomStatusEffect {
 
     @Override
     public void addInstances(List<StatusEffectInstance> result, int duration, int amplifier, boolean ambient, boolean showParticles, boolean showIcon) {
-        List<CustomEffect> options = new ArrayList<>();
-        for (CustomEffect option : this.options) {
-            options.add(option);
-        }
+        List<CustomEffect> options = new ArrayList<>(this.options);
         int added = 0;
         while (options.size() > 0 && added < amplifier + 1) {
             added += 1;
-            double totalChance = options.stream().map(effect -> effect.chance).collect(Collectors.summingDouble(Double::doubleValue));
+            double totalChance = options.stream().map(effect -> effect.chance).mapToDouble(Double::doubleValue).sum();
             double random = Math.random() * totalChance;
             for (int i = 0; i < options.size(); i++) {
                 CustomEffect option = options.get(i);
