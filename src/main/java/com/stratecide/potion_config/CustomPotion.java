@@ -49,7 +49,7 @@ public class CustomPotion {
                 case "type":
                     type = switch (value.getAsString()) {
                         case "splash" -> PotionType.Splash;
-                        case "linger" -> PotionType.Lingering;
+                        case "linger", "lingering" -> PotionType.Lingering;
                         case "craft" -> PotionType.CraftIngredient;
                         default -> PotionType.Normal;
                     };

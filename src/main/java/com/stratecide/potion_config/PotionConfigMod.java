@@ -443,6 +443,7 @@ public class PotionConfigMod implements ModInitializer {
 		"minecraft:fire_resistance": {}
 	},
 	"flames": {
+		"type": "splash",
 		"color": "ff6600",
 		"potion-config:flames": { "amplifier": 9 }
 	},
@@ -454,22 +455,26 @@ public class PotionConfigMod implements ModInitializer {
 	},
 	
 	"poison": {
+		"type": "linger",
 		"color": "4E9331",
 		"duration": 100,
 		"minecraft:poison": {},
 		"potion-config:particles": { "color": "4E9331" }
 	},
 	"short_slowness": {
+		"type": "splash",
 		"color": "5A6C81",
 		"duration": 200,
 		"minecraft:slowness": {},
 		"potion-config:particles": { "color": "5A6C81" }
 	},
 	"healing": {
+		"type": "linger",
 		"color": "CD5CAB",
 		"minecraft:instant_health": { "amplifier": 1 }
 	},
 	"harming": {
+		"type": "linger",
 		"color": "430A09",
 		"minecraft:instant_damage": { "amplifier": 1 }
 	},
@@ -698,7 +703,7 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String DEFAULT_RECIPES = """
 {
 	"water": {
-		"minecraft:rotten_flesh": "mundane",
+		"#minecraft:leaves": "mundane",
 		"minecraft:nether_wart": "awkward",
 		"minecraft:sugar": "lemonade",
 		"minecraft:wheat": "beer"
@@ -764,9 +769,9 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String DEFAULT_OTHER = """
 {
 	"witch": {
-		"water_breathing": "water_breathing",
+		"water_breathing": "water_breathing_witch",
 		"fire_resistance": "fire_resistance_witch",
-		"healing": "regeneration",
+		"healing": "regeneration_witch",
 		"swiftness": "swiftness",
 		"splash_harming": "harming",
 		"splash_healing": "healing",
