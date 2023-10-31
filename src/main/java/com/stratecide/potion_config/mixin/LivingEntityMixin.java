@@ -1,36 +1,25 @@
 package com.stratecide.potion_config.mixin;
 
-import com.google.common.collect.Maps;
 import com.stratecide.potion_config.PotionColorList;
 import com.stratecide.potion_config.PotionConfigMod;
 import com.stratecide.potion_config.blocks.FloorBlock;
-import com.stratecide.potion_config.effects.AfterEffect;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -54,6 +43,8 @@ public abstract class LivingEntityMixin extends Entity {
     @Shadow public abstract @Nullable StatusEffectInstance getStatusEffect(StatusEffect effect);
 
     @Shadow public abstract boolean addStatusEffect(StatusEffectInstance effect);
+
+    @Shadow public abstract int getRoll();
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void injectPotionColorTracker(CallbackInfo ci) {
@@ -132,6 +123,16 @@ public abstract class LivingEntityMixin extends Entity {
                     addStatusEffect(statusEffectInstance);
                 }
             }
+        }
+    }
+
+    @Inject(method = "tickFallFlying", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"), cancellable = true)
+    private void injectElytraEffect(CallbackInfo ci) {
+        if (hasStatusEffect(CustomStatusEffect.ELYTRA)) {
+            if (!this.world.isClient && (getRoll() + 1) % 10 == 0) {
+                this.emitGameEvent(GameEvent.ELYTRA_GLIDE);
+            }
+            ci.cancel();
         }
     }
 }

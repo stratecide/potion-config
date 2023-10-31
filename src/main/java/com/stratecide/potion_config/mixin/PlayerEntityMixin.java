@@ -5,18 +5,23 @@ import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
+    @Shadow public abstract void startFallFlying();
+
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
@@ -36,6 +41,29 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 result /= 1.0 + 12.0 / (4.0 + (double) this.getStatusEffect(CustomStatusEffect.FINESSE).getAmplifier());
             }
             cir.setReturnValue((float) result);
+        }
+    }
+
+    @Inject(method = "checkFallFlying", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"), cancellable = true)
+    private void injectElytraEffect(CallbackInfoReturnable<Boolean> cir) {
+        if (hasStatusEffect(CustomStatusEffect.ELYTRA)) {
+            startFallFlying();
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "checkFallFlying", at = @At("HEAD"), cancellable = true)
+    private void injectElytraEffectRockets(CallbackInfoReturnable<Boolean> cir) {
+        if (this.isFallFlying() && getStatusEffect(CustomStatusEffect.ELYTRA).getAmplifier() > 0) {
+            if (!world.isClient) {
+                ItemStack itemStack = new ItemStack(Items.FIREWORK_ROCKET);
+                FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(world, itemStack, this);
+                world.spawnEntity(fireworkRocketEntity);
+            }
+            StatusEffectInstance oldInstance = getStatusEffect(CustomStatusEffect.ELYTRA);
+            StatusEffectInstance instance = new StatusEffectInstance(CustomStatusEffect.ELYTRA, oldInstance.getDuration(), oldInstance.getAmplifier() - 1, oldInstance.isAmbient(), oldInstance.shouldShowParticles(), oldInstance.shouldShowIcon());
+            setStatusEffect(instance, this);
+            cir.setReturnValue(true);
         }
     }
 }

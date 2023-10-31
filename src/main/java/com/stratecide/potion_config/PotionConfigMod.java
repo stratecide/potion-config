@@ -352,6 +352,12 @@ public class PotionConfigMod implements ModInitializer {
 			]
 		}
 	},
+	"elytra": {
+		"color": "FFEFD1",
+		"duration": 6000,
+		"potion-config:elytra": { "amplifier": 2 },
+		"potion-config:particles": { "color": "FFEFD1" }
+	},
 	"slow_falling": {
 		"color": "FFEFD1",
 		"duration": 6000,

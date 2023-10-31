@@ -15,6 +15,7 @@
     "BrewingStandScreenHandlerMixin",
     "ClientPlayerEntityMixin",
     "CowEntityMixin",
+    "InGameHudMixin",
     "ItemColorsMixin",
     "ItemSettingsMixin",
     "LingeringPotionItemMixin",
