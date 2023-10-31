@@ -20,6 +20,9 @@
     "main": [
       "com.stratecide.potion_config.PotionConfigMod"
     ],
+    "client": [
+      "com.stratecide.potion_config.PotionConfigClient"
+    ],
     "rei_client": [
       "com.stratecide.potion_config.compat.RoughlyEnoughItems"
     ]

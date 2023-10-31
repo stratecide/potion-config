@@ -3,10 +3,13 @@ package com.stratecide.potion_config.mixin;
 import com.google.common.collect.Maps;
 import com.stratecide.potion_config.PotionColorList;
 import com.stratecide.potion_config.PotionConfigMod;
+import com.stratecide.potion_config.blocks.FloorBlock;
 import com.stratecide.potion_config.effects.AfterEffect;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
@@ -18,6 +21,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.registry.Registry;
 import org.jetbrains.annotations.Nullable;
@@ -48,6 +52,8 @@ public abstract class LivingEntityMixin extends Entity {
     @Shadow public abstract boolean hasStatusEffect(StatusEffect effect);
 
     @Shadow public abstract @Nullable StatusEffectInstance getStatusEffect(StatusEffect effect);
+
+    @Shadow public abstract boolean addStatusEffect(StatusEffectInstance effect);
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void injectPotionColorTracker(CallbackInfo ci) {
@@ -113,6 +119,19 @@ public abstract class LivingEntityMixin extends Entity {
         if (hasStatusEffect(CustomStatusEffect.JUMP_DROP)) {
             double reduction = 0.1 * (double)(getStatusEffect(CustomStatusEffect.JUMP_DROP).getAmplifier() + 1);
             cir.setReturnValue(cir.getReturnValueD() - reduction);
+        }
+    }
+
+    @Inject(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isInsideWall()Z"))
+    private void handlePotionBlocks(CallbackInfo ci) {
+        if (!this.isSpectator()) {
+            BlockState state = this.world.getBlockState(this.getVelocityAffectingPos());
+            if (state.getBlock() instanceof FloorBlock) {
+                FloorBlock block = (FloorBlock) state.getBlock();
+                for (StatusEffectInstance statusEffectInstance : block.getPotion().generateEffectInstances()) {
+                    addStatusEffect(statusEffectInstance);
+                }
+            }
         }
     }
 }

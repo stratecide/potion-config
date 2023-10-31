@@ -40,9 +40,9 @@ public class PotionColor {
         this.framesPerColor = framesPerColor;
     }
 
-    public int getColor(boolean inBottle) {
+    public int getColor(boolean avoidFlickering) {
         if (framesPerColor <= 0) {
-            if (inBottle) {
+            if (avoidFlickering) {
                 int red = 0;
                 int green = 0;
                 int blue = 0;

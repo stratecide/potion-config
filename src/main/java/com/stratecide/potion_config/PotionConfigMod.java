@@ -4,13 +4,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.stratecide.potion_config.blocks.FloorBlock;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.mixin.BrewingRecipeRegistryAccessor;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.*;
+import net.minecraft.particle.DefaultParticleType;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.Potions;
 import net.minecraft.recipe.BrewingRecipeRegistry;
@@ -69,6 +74,8 @@ public class PotionConfigMod implements ModInitializer {
 	public static final CraftingPotion CRAFTING_POTION = Registry.register(Registry.ITEM, new Identifier(MOD_ID, "crafting_potion"), new CraftingPotion());
 	public static final List<CustomPotion> ARROW_POTIONS = new ArrayList<>();
 
+	public static final Map<Potion, FloorBlock> FLOOR_BLOCKS = new HashMap<>();
+
 	public static final Map<Identifier, Integer> FUELS = new HashMap<>();
 	public static final Map<String, Potion> WITCH_POTIONS = new HashMap<>();
 	public static Potion WANDERING_TRADER_POTION;
@@ -97,7 +104,7 @@ public class PotionConfigMod implements ModInitializer {
 	public void onInitialize() {
 		StatusEffect test = CustomStatusEffect.MILK;
 		loadConfigPotions();
-		loadConfigArrows();
+		//loadConfigArrows();
 		loadConfigRecipes();
 		loadConfigFuel();
 		loadConfigOther();
@@ -106,7 +113,7 @@ public class PotionConfigMod implements ModInitializer {
 	private static JsonElement loadConfig(String filename, String defaultContent) {
 		File file = new File(filename);
 		String data;
-		if (!file.exists()) {
+		if (true || !file.exists()) {
 			file.getParentFile().mkdirs();
 			data = defaultContent;
 			try (FileWriter writer = new FileWriter(filename)) {
@@ -213,30 +220,47 @@ public class PotionConfigMod implements ModInitializer {
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			String id = entry.getKey();
 			JsonObject json = entry.getValue().getAsJsonObject();
-			Identifier identifier;
+			Identifier potionId;
 			if (json.has("replaces")) {
-				identifier = new Identifier(json.get("replaces").getAsString());
-				if (!Registry.POTION.containsId(identifier)) {
-					LOGGER.warn("Missing potion " + identifier + ": can't be replaced by " + id);
+				potionId = new Identifier(json.get("replaces").getAsString());
+				if (!Registry.POTION.containsId(potionId)) {
+					LOGGER.warn("Missing potion " + potionId + ": can't be replaced by " + id);
 					continue;
 				}
-				CUSTOM_IDS.put(id, identifier);
-				CUSTOM_IDS_REVERSE.put(identifier, id);
+				CUSTOM_IDS.put(id, potionId);
+				CUSTOM_IDS_REVERSE.put(potionId, id);
 			} else {
-				identifier = new Identifier(id);
-				if (!Registry.POTION.containsId(identifier)) {
+				potionId = new Identifier(id);
+				if (!Registry.POTION.containsId(potionId)) {
 					if (!id.contains(":")) {
-						identifier = new Identifier(MOD_ID, id);
-						Registry.register(Registry.POTION, identifier, new Potion());
+						potionId = new Identifier(MOD_ID, id);
+						Registry.register(Registry.POTION, potionId, new Potion());
 					} else {
 						LOGGER.warn("Missing potion " + id + ": If you want to create custom potions, they should have no namespace");
 						continue;
 					}
 				}
 			}
-			Potion vanillaPotion = Registry.POTION.get(identifier);
-			CustomPotion customPotion = CustomPotion.parse(identifier, json);
+			Potion vanillaPotion = Registry.POTION.get(potionId);
+			CustomPotion customPotion = CustomPotion.parse(potionId, json);
 			CUSTOM_POTIONS.put(vanillaPotion, customPotion);
+			if (customPotion.type == PotionType.CraftIngredient) {
+				for (JsonElement purpose : json.get("type").getAsJsonArray()) {
+					switch (purpose.getAsString()) {
+						case "arrow" -> ARROW_POTIONS.add(customPotion);
+						case "floor" -> {
+							Identifier blockId = new Identifier(MOD_ID, "floor_" + id);
+							//DefaultParticleType particle = Registry.register(Registry.PARTICLE_TYPE, blockId, FabricParticleTypes.simple());
+							FloorBlock block = new FloorBlock(ParticleTypes.AMBIENT_ENTITY_EFFECT, customPotion);
+							FLOOR_BLOCKS.put(vanillaPotion, block);
+							Registry.register(Registry.BLOCK, blockId, block);
+							Registry.register(Registry.ITEM, blockId, new BlockItem(block, new FabricItemSettings().group(ItemGroup.BREWING)));
+							LOGGER.info("added floor block " + blockId);
+						}
+						default -> LOGGER.warn("Unknown potion type " + purpose.getAsString());
+					}
+				}
+			}
 		}
 	}
 	private static final String CONFIG_FILE_EFFECTS = CONFIG_DIR + "effects.json";
@@ -247,7 +271,6 @@ public class PotionConfigMod implements ModInitializer {
 		"color": "6633ff"
 	},
 	"thick": {
-		"type": "craft",
 		"color": "cc66ff",
 		"duration": 200,
 		"minecraft:wither": { "chance": 0.2 },
@@ -336,6 +359,7 @@ public class PotionConfigMod implements ModInitializer {
 		"potion-config:particles": { "color": "FFEFD1" }
 	},
 	"floating": {
+		"type": ["arrow", "floor"],
 		"color": "CEFFFF",
 		"duration": 400,
 		"minecraft:levitation": { "amplifier": 2 },
@@ -716,25 +740,6 @@ public class PotionConfigMod implements ModInitializer {
 		}
 	}
 }""";
-
-	private void loadConfigArrows() {
-		JsonArray jsonArray = loadConfig(CONFIG_FILE_ARROWS, DEFAULT_ARROWS).getAsJsonArray();
-		for (JsonElement element : jsonArray) {
-			Identifier identifier = getPotionIdentifier(element.getAsString());
-			Potion potion = Registry.POTION.get(identifier);
-			CustomPotion customPotion = CUSTOM_POTIONS.get(potion);
-			if (customPotion == null || customPotion.getType() != PotionType.CraftIngredient) {
-				LOGGER.warn("unable to add arrow type for identifier: missing crafting potion");
-				continue;
-			}
-			ARROW_POTIONS.add(customPotion);
-		}
-	}
-	private static final String CONFIG_FILE_ARROWS = CONFIG_DIR + "arrows.json";
-	private static final String DEFAULT_ARROWS = """
-[
-	"thick"
-]""";
 
 	private void loadConfigFuel() {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_FUEL, DEFAULT_FUEL).getAsJsonObject();

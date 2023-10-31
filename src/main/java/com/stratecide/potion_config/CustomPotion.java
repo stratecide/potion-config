@@ -47,12 +47,15 @@ public class CustomPotion {
             JsonElement value = entry.getValue();
             switch (key) {
                 case "type":
-                    type = switch (value.getAsString()) {
-                        case "splash" -> PotionType.Splash;
-                        case "linger", "lingering" -> PotionType.Lingering;
-                        case "craft" -> PotionType.CraftIngredient;
-                        default -> PotionType.Normal;
-                    };
+                    if (value.isJsonArray()) {
+                        type = PotionType.CraftIngredient;
+                    } else {
+                        type = switch (value.getAsString()) {
+                            case "splash" -> PotionType.Splash;
+                            case "linger", "lingering" -> PotionType.Lingering;
+                            default -> PotionType.Normal;
+                        };
+                    }
                     break;
                 case "duration":
                     duration = value.getAsInt();
@@ -110,8 +113,8 @@ public class CustomPotion {
         return type == PotionType.CraftIngredient && PotionConfigMod.ARROW_POTIONS.contains(this);
     }
 
-    public int getColor(boolean inBottle) {
-        return color.getColor(inBottle);
+    public int getColor(boolean avoidFlickering) {
+        return color.getColor(avoidFlickering);
     }
 
     public List<StatusEffectInstance> generateEffectInstances() {
