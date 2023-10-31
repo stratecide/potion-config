@@ -16,6 +16,15 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	maven { url = "https://maven.shedaniel.me/" } // REI and deps
+}
+
+configurations.configureEach {
+	resolutionStrategy.eachDependency {
+		if (requested.module.name == "fabric-loader") {
+			useVersion(loader_version)
+		}
+	}
 }
 
 dependencies {
@@ -26,6 +35,12 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	// REI Runtime for Fabric
+	modLocalRuntime "me.shedaniel:RoughlyEnoughItems-fabric:$rei_version"
+	// REI API for Fabric
+	modCompileOnly "me.shedaniel:RoughlyEnoughItems-api-fabric:$rei_version"
+	modCompileOnly "me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:$rei_version"
 }
 
 processResources {
@@ -54,6 +69,10 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_${project.archivesBaseName}"}
 	}
+}
+
+loom {
+	accessWidenerPath = file("src/main/resources/potion_config.accesswidener")
 }
 
 // configure the maven publication

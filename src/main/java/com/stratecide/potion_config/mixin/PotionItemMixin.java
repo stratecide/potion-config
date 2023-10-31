@@ -1,5 +1,6 @@
 package com.stratecide.potion_config.mixin;
 
+import com.stratecide.potion_config.CustomPotion;
 import com.stratecide.potion_config.PotionConfigMod;
 
 import com.stratecide.potion_config.PotionType;
@@ -41,14 +42,6 @@ public abstract class PotionItemMixin extends Item {
         return settings;
     }
 
-    @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
-    void properTranslationKey(ItemStack stack, CallbackInfoReturnable<String> cir) {
-        Potion potion = PotionUtil.getPotion(stack);
-        PotionType type = PotionType.from((PotionItem) (Object) this);
-        String postfix = PotionConfigMod.getCustomPotionId(type, potion);
-        cir.setReturnValue(this.getTranslationKey() + ".effect." + (postfix != null ? postfix : "mystery"));
-    }
-
     @Redirect(method = "finishUsing", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;insertStack(Lnet/minecraft/item/ItemStack;)Z"))
     boolean dropBottleIfNotEnoughInventory(PlayerInventory playerInventory, ItemStack stack) {
         if (!playerInventory.insertStack(stack)) {
@@ -64,26 +57,11 @@ public abstract class PotionItemMixin extends Item {
     }
 
     @Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)
-    void removeFromCreativeInventory(ItemGroup group, DefaultedList<ItemStack> stacks, CallbackInfo ci) {
+    void onlyAddCorrectTypeCombinations(ItemGroup group, DefaultedList<ItemStack> stacks, CallbackInfo ci) {
         if (this.isIn(group)) {
-            PotionItem self = (PotionItem) ((Object) this);
-            if (self instanceof SplashPotionItem) {
-                for (Potion potion : Registry.POTION) {
-                    if (potion != Potions.EMPTY && PotionConfigMod.hasSplashPotion(potion)) {
-                        stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
-                    }
-                }
-            } else if (self instanceof LingeringPotionItem) {
-                for (Potion potion : Registry.POTION) {
-                    if (potion != Potions.EMPTY && PotionConfigMod.hasLingeringPotion(potion)) {
-                        stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
-                    }
-                }
-            } else {
-                for (Potion potion : Registry.POTION) {
-                    if (potion != Potions.EMPTY && PotionConfigMod.hasNormalPotion(potion)) {
-                        stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
-                    }
+            for (CustomPotion potion : PotionConfigMod.CUSTOM_POTIONS.values()) {
+                if (potion.getPotionItem() == this) {
+                    stacks.add(PotionUtil.setPotion(new ItemStack(this), Registry.POTION.get(potion.potionId)));
                 }
             }
             ci.cancel();

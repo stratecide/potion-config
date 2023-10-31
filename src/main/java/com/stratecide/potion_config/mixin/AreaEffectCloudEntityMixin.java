@@ -45,7 +45,7 @@ public abstract class AreaEffectCloudEntityMixin extends Entity {
         if (this.world.isClient) {
             return;
         }
-        CustomPotion potion = PotionConfigMod.getLingeringPotion(this.getPotion());
+        CustomPotion potion = PotionConfigMod.getCustomPotion(this.getPotion());
         int color = potion.getColor(false);
         if (color != getColor()) {
             setColor(color);
@@ -65,7 +65,7 @@ public abstract class AreaEffectCloudEntityMixin extends Entity {
         LivingEntity entity = (LivingEntity) entityObject;
         Integer result = map.put(entity, (Integer) ageObject);
         // the list is re-generated for each LivingEntity because effects can have a less than 100% chance to affect an entity
-        CustomPotion potion = PotionConfigMod.getLingeringPotion(this.getPotion());
+        CustomPotion potion = PotionConfigMod.getCustomPotion(this.getPotion());
         List<StatusEffectInstance> effects = potion.generateEffectInstances();
         effects.addAll(this.effects);
         AreaEffectCloudEntity self = (AreaEffectCloudEntity) ((Object) this);

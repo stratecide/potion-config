@@ -1,77 +1,39 @@
 package com.stratecide.potion_config.mixin;
 
-import com.stratecide.potion_config.ArrowRecipe;
-import com.stratecide.potion_config.ModdedBrewingRecipeRegistry;
-import com.stratecide.potion_config.PotionConfigMod;
-import com.stratecide.potion_config.PotionType;
-import net.minecraft.inventory.CraftingInventory;
+import com.stratecide.potion_config.*;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.PotionItem;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
-import net.minecraft.potion.Potions;
 import net.minecraft.recipe.TippedArrowRecipe;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(TippedArrowRecipe.class)
 public abstract class TippedArrowRecipeMixin {
 
-    @Inject(method = "matches", at = @At("HEAD"), cancellable = true)
-    void injectMatches(CraftingInventory craftingInventory, World world, CallbackInfoReturnable<Boolean> cir) {
-        if (craftingInventory.getWidth() != 3 || craftingInventory.getHeight() != 3) {
-            cir.setReturnValue(false);
+    @Redirect(method = "matches", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"))
+    boolean injectMatches(ItemStack itemStack, Item lingeringPotionItem) {
+        if (lingeringPotionItem != Items.LINGERING_POTION)
+            return itemStack.isOf(lingeringPotionItem);
+        if (itemStack.isOf(PotionConfigMod.CRAFTING_POTION)) {
+            Potion vanillaPotion = PotionUtil.getPotion(itemStack);
+            CustomPotion potion = PotionConfigMod.getCustomPotion(vanillaPotion);
+            return potion.canBeArrow();
         }
-        Potion potion = null;
-        PotionType potionType = null;
-        for(int i = 0; i < craftingInventory.getWidth(); ++i) {
-            for(int j = 0; j < craftingInventory.getHeight(); ++j) {
-                ItemStack itemStack = craftingInventory.getStack(i + j * craftingInventory.getWidth());
-                if (itemStack.isEmpty()) {
-                    cir.setReturnValue(false);
-                    return;
-                }
-
-                if (i == 1 && j == 1) {
-                    if (!(itemStack.getItem() instanceof PotionItem)) {
-                        cir.setReturnValue(false);
-                        return;
-                    } else {
-                        potion = PotionUtil.getPotion(itemStack);
-                        potionType = PotionType.from((PotionItem) itemStack.getItem());
-                    }
-                } else if (!itemStack.isOf(Items.ARROW)) {
-                    cir.setReturnValue(false);
-                    return;
-                }
-            }
-        }
-        if (potion != null) {
-            for (ArrowRecipe recipe : PotionConfigMod.ARROW_RECIPES) {
-                if (recipe.matches(potionType, potion)) {
-                    cir.setReturnValue(true);
-                    return;
-                }
-            }
-        }
-        cir.setReturnValue(false);
+        return false;
     }
 
-    @Inject(method = "craft", at = @At("HEAD"), cancellable = true)
-    void injectCraft(CraftingInventory craftingInventory, CallbackInfoReturnable<ItemStack> cir) {
-        ItemStack itemStack = craftingInventory.getStack(1 + craftingInventory.getWidth());
-        Potion potion = PotionUtil.getPotion(itemStack);
-        PotionType potionType = PotionType.from((PotionItem) itemStack.getItem());
-        for (ArrowRecipe recipe : PotionConfigMod.ARROW_RECIPES) {
-            if (recipe.matches(potionType, potion)) {
-                cir.setReturnValue(recipe.craft(potionType, potion));
-                return;
-            }
+    @Redirect(method = "craft(Lnet/minecraft/inventory/CraftingInventory;)Lnet/minecraft/item/ItemStack;", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"))
+    boolean injectCraft(ItemStack itemStack, Item lingeringPotionItem) {
+        if (itemStack.isOf(PotionConfigMod.CRAFTING_POTION)) {
+            Potion vanillaPotion = PotionUtil.getPotion(itemStack);
+            CustomPotion potion = PotionConfigMod.getCustomPotion(vanillaPotion);
+            return potion.canBeArrow();
         }
-        cir.setReturnValue(ItemStack.EMPTY);
+        return false;
     }
 }

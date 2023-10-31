@@ -18,7 +18,7 @@ public abstract class StatusEffectInstanceMixin {
     private void applyAfterEffects(LivingEntity entity, Runnable overwriteCallback, CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValue() && this.getEffectType() instanceof AfterEffect) {
             AfterEffect afterEffect = (AfterEffect) this.getEffectType();
-            for (StatusEffectInstance effect : afterEffect.getPotion().generateEffectInstances()) {
+            for (StatusEffectInstance effect : afterEffect.generateEffectInstances()) {
                 entity.addStatusEffect(effect);
             }
         }

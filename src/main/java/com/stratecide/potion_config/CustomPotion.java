@@ -9,7 +9,9 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -25,13 +27,16 @@ import java.util.Optional;
 public class CustomPotion {
     private static final Text NONE_TEXT = Text.translatable("effect.none").formatted(Formatting.GRAY);
 
+    public final Identifier potionId;
+    final PotionType type;
     final int duration;
     final boolean isPermanent;
     final Optional<Identifier> afterEffects;
     final List<CustomEffect> effects;
     final PotionColor color;
 
-    public static CustomPotion parse(JsonObject jsonObject) {
+    public static CustomPotion parse(Identifier potionId, JsonObject jsonObject) {
+        PotionType type = PotionType.Normal;
         int duration = PotionConfigMod.DURATION_DEFAULT;
         boolean isPermanent = false;
         PotionColor color = PotionColor.neutral();
@@ -41,6 +46,14 @@ public class CustomPotion {
             String key = entry.getKey();
             JsonElement value = entry.getValue();
             switch (key) {
+                case "type":
+                    type = switch (value.getAsString()) {
+                        case "splash" -> PotionType.Splash;
+                        case "linger" -> PotionType.Lingering;
+                        case "craft" -> PotionType.CraftIngredient;
+                        default -> PotionType.Normal;
+                    };
+                    break;
                 case "duration":
                     duration = value.getAsInt();
                     break;
@@ -51,7 +64,7 @@ public class CustomPotion {
                     color = PotionColor.parse(value);
                     break;
                 case "after":
-                    afterEffects = Optional.of(new Identifier(PotionConfigMod.MOD_ID, PotionConfigMod.AFTER_EFFECT_PREFIX + value.getAsString()));
+                    afterEffects = Optional.of(AfterEffect.parse(value.getAsJsonObject()));
                     break;
                 default:
                     Identifier identifier = new Identifier(key);
@@ -63,19 +76,38 @@ public class CustomPotion {
                     }
             }
         }
-        return new CustomPotion(duration, isPermanent, color, afterEffects, effects);
+        return new CustomPotion(potionId, type, duration, isPermanent, color, afterEffects, effects);
     }
 
-    public static CustomPotion empty() {
-        return new CustomPotion(0, false, PotionColor.neutral(), Optional.empty(), new ArrayList<>());
+    public static CustomPotion empty(Identifier potionId) {
+        return new CustomPotion(potionId, PotionType.Normal, 0, false, PotionColor.neutral(), Optional.empty(), new ArrayList<>());
     }
 
-    private CustomPotion(int duration, boolean isPermanent, PotionColor color, Optional<Identifier> afterEffects, List<CustomEffect> effects) {
+    private CustomPotion(Identifier potionId, PotionType type, int duration, boolean isPermanent, PotionColor color, Optional<Identifier> afterEffects, List<CustomEffect> effects) {
+        this.potionId = potionId;
+        this.type = type;
         this.duration = duration;
         this.isPermanent = isPermanent;
         this.color = color;
         this.afterEffects = afterEffects;
         this.effects = effects;
+    }
+
+    public PotionType getType() {
+        return type;
+    }
+
+    public Item getPotionItem() {
+        return switch (type) {
+            case Normal -> Items.POTION;
+            case Splash -> Items.SPLASH_POTION;
+            case Lingering -> Items.LINGERING_POTION;
+            case CraftIngredient -> PotionConfigMod.CRAFTING_POTION;
+        };
+    }
+
+    public boolean canBeArrow() {
+        return type == PotionType.CraftIngredient && PotionConfigMod.ARROW_POTIONS.contains(this);
     }
 
     public int getColor(boolean inBottle) {
@@ -85,7 +117,12 @@ public class CustomPotion {
     public List<StatusEffectInstance> generateEffectInstances() {
         return generateEffectInstances(false, true, true);
     }
+
     public List<StatusEffectInstance> generateEffectInstances(boolean ambient, boolean showParticles, boolean showIcon) {
+        return generateEffectInstances(effects, duration, afterEffects, ambient, showParticles, showIcon);
+    }
+
+    public static List<StatusEffectInstance> generateEffectInstances(List<CustomEffect> effects, int duration, Optional<Identifier> afterEffects, boolean ambient, boolean showParticles, boolean showIcon) {
         List<StatusEffectInstance> result = new ArrayList<>();
         for (CustomEffect effect : effects) {
             if (Math.random() < effect.chance) {

@@ -45,7 +45,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
         if (this.potion == Potions.EMPTY) {
             this.dataTracker.set(COLOR, -1);
         } else {
-            CustomPotion potion = PotionConfigMod.getArrowPotion(this.potion);
+            CustomPotion potion = PotionConfigMod.getCustomPotion(this.potion);
             int color = potion.getColor(false);
             this.dataTracker.set(COLOR, color);
         }
@@ -57,7 +57,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
         if (this.world.isClient || colorSet || this.potion == Potions.EMPTY) {
             return;
         }
-        CustomPotion potion = PotionConfigMod.getArrowPotion(this.potion);
+        CustomPotion potion = PotionConfigMod.getCustomPotion(this.potion);
         int color = potion.getColor(false);
         if (color != getColor()) {
             this.dataTracker.set(COLOR, color);
@@ -72,7 +72,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
     @Inject(method = "onHit", at = @At(value = "INVOKE", target = "Ljava/util/Set;isEmpty()Z"))
     private void injectPotionEffects(LivingEntity target, CallbackInfo ci) {
         if (this.potion != Potions.EMPTY) {
-            for (StatusEffectInstance statusEffectInstance : PotionConfigMod.getArrowPotion(this.potion).generateEffectInstances()) {
+            for (StatusEffectInstance statusEffectInstance : PotionConfigMod.getCustomPotion(this.potion).generateEffectInstances()) {
                 target.addStatusEffect(statusEffectInstance, this.getEffectCause());
             }
         }

@@ -19,11 +19,15 @@
   "entrypoints": {
     "main": [
       "com.stratecide.potion_config.PotionConfigMod"
+    ],
+    "rei_client": [
+      "com.stratecide.potion_config.compat.RoughlyEnoughItems"
     ]
   },
   "mixins": [
     "potion_config.mixins.json"
   ],
+  "accessWidener" : "potion_config.accesswidener",
 
   "depends": {
     "fabricloader": ">=0.14.21",
