@@ -1,25 +1,23 @@
 package com.stratecide.potion_config;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.stratecide.potion_config.blocks.FloorBlock;
+import com.stratecide.potion_config.blocks.FloorBlockRecipe;
+import com.stratecide.potion_config.blocks.FloorBlockRecipeContainer;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.mixin.BrewingRecipeRegistryAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
-import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.*;
-import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.Potions;
-import net.minecraft.recipe.BrewingRecipeRegistry;
-import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.*;
 import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -75,6 +73,9 @@ public class PotionConfigMod implements ModInitializer {
 	public static final List<CustomPotion> ARROW_POTIONS = new ArrayList<>();
 
 	public static final Map<Potion, FloorBlock> FLOOR_BLOCKS = new HashMap<>();
+	public static final SpecialRecipeSerializer<FloorBlockRecipe> FLOOR_BLOCK_RECIPE = RecipeSerializer.register(MOD_ID + ":crafting_special_floor", new SpecialRecipeSerializer<>(FloorBlockRecipe::new));
+
+	public static final Map<Potion, FloorBlockRecipeContainer> FLOOR_BLOCK_RECIPES = new HashMap<>();
 
 	public static final Map<Identifier, Integer> FUELS = new HashMap<>();
 	public static final Map<String, Potion> WITCH_POTIONS = new HashMap<>();
@@ -246,21 +247,38 @@ public class PotionConfigMod implements ModInitializer {
 			CUSTOM_POTIONS.put(vanillaPotion, customPotion);
 			if (customPotion.type == PotionType.CraftIngredient) {
 				for (JsonElement purpose : json.get("type").getAsJsonArray()) {
-					switch (purpose.getAsString()) {
-						case "arrow" -> ARROW_POTIONS.add(customPotion);
-						case "floor" -> {
-							Identifier blockId = new Identifier(MOD_ID, "floor_" + id);
-							//DefaultParticleType particle = Registry.register(Registry.PARTICLE_TYPE, blockId, FabricParticleTypes.simple());
-							FloorBlock block = new FloorBlock(ParticleTypes.AMBIENT_ENTITY_EFFECT, customPotion);
-							FLOOR_BLOCKS.put(vanillaPotion, block);
-							Registry.register(Registry.BLOCK, blockId, block);
-							Registry.register(Registry.ITEM, blockId, new BlockItem(block, new FabricItemSettings().group(ItemGroup.BREWING)));
-							LOGGER.info("added floor block " + blockId);
+					if (purpose.isJsonObject()) {
+						JsonObject obj = purpose.getAsJsonObject();
+						switch (obj.get("craft").getAsString()) {
+							case "arrow" -> ARROW_POTIONS.add(customPotion);
+							case "floor" -> {
+								String ingredient = null;
+								if (obj.has("ingredient"))
+									ingredient = obj.get("ingredient").getAsString();
+								int outputCount = 1;
+								if (obj.has("count"))
+									outputCount = obj.get("count").getAsInt();
+								registerFloorBlock(id, vanillaPotion, customPotion, potionId, ingredient, outputCount);
+							}
+							default -> LOGGER.warn("Unknown potion type " + purpose.getAsString());
 						}
+					} else switch (purpose.getAsString()) {
+						case "arrow" -> ARROW_POTIONS.add(customPotion);
+						case "floor" -> registerFloorBlock(id, vanillaPotion, customPotion, potionId, "#logs", 1);
 						default -> LOGGER.warn("Unknown potion type " + purpose.getAsString());
 					}
 				}
 			}
+		}
+	}
+	private static void registerFloorBlock(String id, Potion vanillaPotion, CustomPotion customPotion, Identifier potionId, String recipeIngredient, int recipeOutput) {
+		Identifier blockId = new Identifier(MOD_ID, "floor_" + id);
+		FloorBlock block = new FloorBlock(ParticleTypes.AMBIENT_ENTITY_EFFECT, customPotion);
+		FLOOR_BLOCKS.put(vanillaPotion, block);
+		Registry.register(Registry.BLOCK, blockId, block);
+		Registry.register(Registry.ITEM, blockId, new BlockItem(block, new FabricItemSettings().group(ItemGroup.BREWING)));
+		if (recipeIngredient != null && recipeOutput > 0) {
+			FLOOR_BLOCK_RECIPES.put(vanillaPotion, new FloorBlockRecipeContainer(ingredientFromString(recipeIngredient), recipeOutput));
 		}
 	}
 	private static final String CONFIG_FILE_EFFECTS = CONFIG_DIR + "effects.json";
@@ -365,7 +383,7 @@ public class PotionConfigMod implements ModInitializer {
 		"potion-config:particles": { "color": "FFEFD1" }
 	},
 	"floating": {
-		"type": ["arrow", "floor"],
+		"type": ["arrow"],
 		"color": "CEFFFF",
 		"duration": 400,
 		"minecraft:levitation": { "amplifier": 2 },
@@ -374,6 +392,17 @@ public class PotionConfigMod implements ModInitializer {
 		"after": {
 			"duration": 240,
 			"minecraft:slow_falling": {}
+		}
+	},
+	"jump_pad": {
+		"type": [{"craft": "floor", "ingredient": "#leaves", "count": 7}],
+		"color": "ff7000",
+		"duration": 5,
+		"minecraft:jump_boost": { "amplifier": 7 },
+		"potion-config:particles": { "color": "ff7000" },
+		"after": {
+			"duration": 40,
+			"potion-config:no_fall_damage": {}
 		}
 	},
 	"creative_flight": {

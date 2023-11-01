@@ -8,10 +8,19 @@ When you first start Minecraft after installing this mod, a config file will be 
 
 TODO:
 
-V   check witch, wandering trader
-V   test tag-ingredients for brewing
+    inject into beacon and heart of the sea
+    add portal blocks
     hide after-effects from inventory screen
     remove lingering potion -> tipped arrow recipes from REI
+
+    add StatusEffect that causes another whenever some trigger occurs (onGrounded)
+    add InstantEffect that removes the specified StatusEffect. Problem: how to specify which one to remove?
+    reduce error messages in console
     show unstable potions in REI brewing
     don't show each brewing recipe 3 times in REI
     prevent use of invalid potions, add recipe to convert them to the correct bottle type
+
+## Before publishing:
+- check potion replacement of Witch, Wandering Trader
+- check Stray's arrow
+- remove "true || " from PotionConfigMod.loadConfig

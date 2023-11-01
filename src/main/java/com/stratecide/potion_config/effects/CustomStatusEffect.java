@@ -66,6 +66,7 @@ public class CustomStatusEffect extends StatusEffect {
     // moves camera in random directions, may change main-hand slot as if the scroll-wheel was used
     public static final CustomStatusEffect DRUNK = register("drunk", new Drunk(StatusEffectCategory.HARMFUL, 0x448822));
     public static final CustomStatusEffect ELYTRA = register("elytra", new ElytraEffect(StatusEffectCategory.BENEFICIAL, 0x66bbff));
+    public static final CustomStatusEffect NO_FALL_DAMAGE = register("no_fall_damage", new NoFallDamage(StatusEffectCategory.BENEFICIAL, 0x236454));
 
     private static CustomStatusEffect register(String id, CustomStatusEffect entry) {
         return Registry.register(Registry.STATUS_EFFECT, new Identifier(PotionConfigMod.MOD_ID, id), entry);

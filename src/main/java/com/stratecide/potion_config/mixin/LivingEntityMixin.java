@@ -9,6 +9,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.effect.StatusEffect;
@@ -45,6 +46,8 @@ public abstract class LivingEntityMixin extends Entity {
     @Shadow public abstract boolean addStatusEffect(StatusEffectInstance effect);
 
     @Shadow public abstract int getRoll();
+
+    @Shadow public abstract boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource);
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void injectPotionColorTracker(CallbackInfo ci) {
@@ -133,6 +136,13 @@ public abstract class LivingEntityMixin extends Entity {
                 this.emitGameEvent(GameEvent.ELYTRA_GLIDE);
             }
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "handleFallDamage", at = @At("HEAD"), cancellable = true)
+    private void injectNoFallDamageEffect(float fallDistance, float damageMultiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
+        if (fallDistance > 0.f && damageSource == DamageSource.FALL && hasStatusEffect(CustomStatusEffect.NO_FALL_DAMAGE)) {
+            cir.setReturnValue(handleFallDamage(0.f, damageMultiplier, damageSource));
         }
     }
 }
