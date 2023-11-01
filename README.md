@@ -10,7 +10,6 @@ TODO:
 
     inject into beacon and heart of the sea
     add portal blocks
-    hide after-effects from inventory screen
     remove lingering potion -> tipped arrow recipes from REI
 
     add StatusEffect that causes another whenever some trigger occurs (onGrounded)
