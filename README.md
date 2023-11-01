@@ -8,7 +8,8 @@ When you first start Minecraft after installing this mod, a config file will be 
 
 TODO:
 
-    hook into beacon and heart of the sea
+    add step-up effect
+    improve slow-falling
     remove lingering potion -> tipped arrow recipes from REI (KubeJS?)
 
     add StatusEffect that causes another whenever some trigger occurs (onGrounded)
@@ -17,6 +18,7 @@ TODO:
     show unstable potions in REI brewing
     don't show each brewing recipe 3 times in REI
     prevent use of invalid potions, add recipe to convert them to the correct bottle type
+    add recipes to JEI, EMI
 
 ## Before publishing:
 - check potion replacement of Witch, Wandering Trader

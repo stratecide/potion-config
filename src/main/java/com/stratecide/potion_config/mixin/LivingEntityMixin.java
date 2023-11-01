@@ -20,8 +20,7 @@ import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -159,5 +158,13 @@ public abstract class LivingEntityMixin extends Entity {
                     return !(effect instanceof AfterEffect) && !(effect instanceof Particles);
                 }).collect(Collectors.toList()));
         }
+    }
+
+    @ModifyConstant(method = "travel", constant = @Constant(doubleValue = 0.01))
+    private double improveSlowFalling(double d) {
+        if (this.isSneaking())
+            return 0.04;
+        else
+            return d;
     }
 }
