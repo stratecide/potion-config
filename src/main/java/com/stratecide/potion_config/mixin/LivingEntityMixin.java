@@ -3,6 +3,7 @@ package com.stratecide.potion_config.mixin;
 import com.stratecide.potion_config.PotionColorList;
 import com.stratecide.potion_config.PotionConfigMod;
 import com.stratecide.potion_config.blocks.FloorBlock;
+import com.stratecide.potion_config.effects.AfterEffect;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
 import net.minecraft.block.BlockState;
@@ -143,6 +144,20 @@ public abstract class LivingEntityMixin extends Entity {
     private void injectNoFallDamageEffect(float fallDistance, float damageMultiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
         if (fallDistance > 0.f && damageSource == DamageSource.FALL && hasStatusEffect(CustomStatusEffect.NO_FALL_DAMAGE)) {
             cir.setReturnValue(handleFallDamage(0.f, damageMultiplier, damageSource));
+        }
+    }
+
+    @Inject(method = "getStatusEffects", at = @At("HEAD"), cancellable = true)
+    private void hideAfterEffects(CallbackInfoReturnable<Collection<StatusEffectInstance>> cir) {
+        // hacky, but redirecting in AbstractInventoryScreen causes collision with REI
+        if (PotionConfigMod.HIDE_AFTER_EFFECTS_DISPLAY) {
+            PotionConfigMod.HIDE_AFTER_EFFECTS_DISPLAY = false;
+            cir.setReturnValue(getActiveStatusEffects().values()
+                .stream()
+                .filter(effectInstance -> {
+                    StatusEffect effect = effectInstance.getEffectType();
+                    return !(effect instanceof AfterEffect) && !(effect instanceof Particles);
+                }).collect(Collectors.toList()));
         }
     }
 }

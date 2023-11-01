@@ -82,6 +82,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static Potion WANDERING_TRADER_POTION;
 
 	public static int TOOLTIP_MILLISECONDS = 2000;
+	public static boolean HIDE_AFTER_EFFECTS_DISPLAY = false;
 	public static int STACK_SIZE = 1;
 	public static int STACK_SIZE_SPLASH = 1;
 	public static int STACK_SIZE_LINGERING = 1;
