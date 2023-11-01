@@ -1,4 +1,4 @@
-package com.stratecide.potion_config.blocks;
+package com.stratecide.potion_config.blocks.floor;
 
 import com.mojang.datafixers.util.Pair;
 import com.stratecide.potion_config.PotionConfigMod;

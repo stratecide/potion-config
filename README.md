@@ -8,9 +8,8 @@ When you first start Minecraft after installing this mod, a config file will be 
 
 TODO:
 
-    inject into beacon and heart of the sea
-    add portal blocks
-    remove lingering potion -> tipped arrow recipes from REI
+    hook into beacon and heart of the sea
+    remove lingering potion -> tipped arrow recipes from REI (KubeJS?)
 
     add StatusEffect that causes another whenever some trigger occurs (onGrounded)
     add InstantEffect that removes the specified StatusEffect. Problem: how to specify which one to remove?

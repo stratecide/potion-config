@@ -2,7 +2,8 @@ package com.stratecide.potion_config.compat;
 
 import com.stratecide.potion_config.CustomPotion;
 import com.stratecide.potion_config.PotionConfigMod;
-import com.stratecide.potion_config.blocks.FloorBlockRecipeContainer;
+import com.stratecide.potion_config.blocks.floor.FloorBlockRecipeContainer;
+import com.stratecide.potion_config.blocks.portal.PortalBlockRecipeContainer;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
@@ -18,10 +19,8 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RoughlyEnoughItems implements REIClientPlugin {
 
@@ -47,16 +46,31 @@ public class RoughlyEnoughItems implements REIClientPlugin {
                     EntryIngredient output = EntryIngredients.of(outputStack);
                     registry.add(new DefaultCustomDisplay(null, input, Collections.singletonList(output)));
                 }
-                FloorBlockRecipeContainer blockRecipe = PotionConfigMod.FLOOR_BLOCK_RECIPES.get(potion);
-                if (blockRecipe != null) {
-                    EntryIngredient ingredient = EntryIngredients.ofIngredient(blockRecipe.ingredient());
+                FloorBlockRecipeContainer floorRecipe = PotionConfigMod.FLOOR_BLOCK_RECIPES.get(potion);
+                if (floorRecipe != null) {
+                    EntryIngredient ingredient = EntryIngredients.ofIngredient(floorRecipe.ingredient());
                     List<EntryIngredient> input = new ArrayList<>();
                     for (int i = 0; i < 4; i++)
                         input.add(ingredient);
                     input.add(EntryIngredients.of(craftingPotion));
                     for (int i = 0; i < 4; i++)
                         input.add(ingredient);
-                    ItemStack outputStack = new ItemStack(PotionConfigMod.FLOOR_BLOCKS.get(potion), blockRecipe.outputCount());
+                    ItemStack outputStack = new ItemStack(PotionConfigMod.FLOOR_BLOCKS.get(potion), floorRecipe.outputCount());
+                    PotionUtil.setPotion(outputStack, potion);
+                    PotionUtil.setCustomPotionEffects(outputStack, PotionUtil.getCustomPotionEffects(craftingPotion));
+                    EntryIngredient output = EntryIngredients.of(outputStack);
+                    registry.add(new DefaultCustomDisplay(null, input, Collections.singletonList(output)));
+                }
+                PortalBlockRecipeContainer portalRecipe = PotionConfigMod.PORTAL_BLOCK_RECIPES.get(potion);
+                if (portalRecipe != null) {
+                    EntryIngredient ingredient = EntryIngredients.ofIngredient(portalRecipe.ingredient());
+                    List<EntryIngredient> input = new ArrayList<>();
+                    for (int i = 0; i < 4; i++)
+                        input.add(ingredient);
+                    input.add(EntryIngredients.of(craftingPotion));
+                    for (int i = 0; i < 4; i++)
+                        input.add(ingredient);
+                    ItemStack outputStack = new ItemStack(PotionConfigMod.PORTAL_BLOCKS.get(potion), portalRecipe.outputCount());
                     PotionUtil.setPotion(outputStack, potion);
                     PotionUtil.setCustomPotionEffects(outputStack, PotionUtil.getCustomPotionEffects(craftingPotion));
                     EntryIngredient output = EntryIngredients.of(outputStack);

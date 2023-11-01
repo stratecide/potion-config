@@ -1,4 +1,4 @@
-package com.stratecide.potion_config.blocks;
+package com.stratecide.potion_config.blocks.floor;
 
 import com.stratecide.potion_config.CustomPotion;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;

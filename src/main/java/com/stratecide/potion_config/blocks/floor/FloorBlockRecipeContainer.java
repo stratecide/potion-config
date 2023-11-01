@@ -1,4 +1,4 @@
-package com.stratecide.potion_config.blocks;
+package com.stratecide.potion_config.blocks.floor;
 
 import net.minecraft.recipe.Ingredient;
 

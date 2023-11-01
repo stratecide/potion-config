@@ -2,7 +2,7 @@ package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.PotionColorList;
 import com.stratecide.potion_config.PotionConfigMod;
-import com.stratecide.potion_config.blocks.FloorBlock;
+import com.stratecide.potion_config.blocks.floor.FloorBlock;
 import com.stratecide.potion_config.effects.AfterEffect;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
