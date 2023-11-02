@@ -13,6 +13,7 @@ import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.mixin.BrewingRecipeRegistryAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
@@ -87,6 +88,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static final Map<Identifier, Integer> FUELS = new HashMap<>();
 	public static final Map<String, Potion> WITCH_POTIONS = new HashMap<>();
 	public static Potion WANDERING_TRADER_POTION;
+	public static final Map<EntityType, Potion> MILK_POTIONS = new HashMap<>();
 
 	public static int TOOLTIP_MILLISECONDS = 2000;
 	public static boolean HIDE_AFTER_EFFECTS_DISPLAY = false;
@@ -102,7 +104,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static String MYSTERY_ARROW = null;
 	public static boolean BLOCKS_DROP_SELF = true;
 	public static int DURATION_DEFAULT = 3600;
-	public static String MILK_POTION = null;
+	public static Identifier MILK_BUCKET_POTION = null;
 	public static final TrackedDataHandler<PotionColorList> POTION_PARTICLE_COLORS = TrackedDataHandler.of(PotionColorList::writePotionColors, PotionColorList::readPotionColors);
 
 	static {
@@ -191,8 +193,9 @@ public class PotionConfigMod implements ModInitializer {
 		if (json.has("default_duration")) {
 			DURATION_DEFAULT = json.get("default_duration").getAsInt();
 		}
-		if (json.has("milk")) {
-			MILK_POTION = json.get("milk").getAsString();
+		MILK_BUCKET_POTION = new Identifier(MOD_ID, "milk");
+		if (json.has("milk_bucket")) {
+			MILK_BUCKET_POTION = new Identifier(json.get("milk_bucket").getAsString());
 		}
 		if (json.has("mystery_normal")) {
 			MYSTERY_NORMAL_POTION = json.get("mystery_normal").getAsString();
@@ -225,7 +228,7 @@ public class PotionConfigMod implements ModInitializer {
 	"mystery_lingering": "rainbow_gradient",
 	"mystery_arrow": "floating",
 	"blocks_drop_self": true,
-	"milk": "milk"
+	"milk_bucket": "potion-config:beer"
 }""";
 
 	private void loadConfigPotions() {
@@ -837,6 +840,20 @@ public class PotionConfigMod implements ModInitializer {
 		if (jsonObject.has("wandering_trader_night")) {
 			WANDERING_TRADER_POTION = Registry.POTION.get(getPotionIdentifier(jsonObject.get("wandering_trader_night").getAsString()));
 		}
+		for (Map.Entry<String, JsonElement> entry : jsonObject.get("milk").getAsJsonObject().entrySet()) {
+			Identifier entityId = new Identifier(entry.getKey());
+			EntityType entityType = Registry.ENTITY_TYPE.get(entityId);
+			if (entityType == EntityType.PIG && !entityId.equals(Registry.ENTITY_TYPE.getId(EntityType.PIG))) {
+				LOGGER.warn("Mob " + entityId + " doesn't exist. (milk)");
+				continue;
+			}
+			Potion potion = Registry.POTION.get(getPotionIdentifier(entry.getValue().getAsString()));
+			if (potion == Potions.EMPTY) {
+				LOGGER.warn("Potion " + entry.getValue() + " doesn't exist. (milk)");
+				continue;
+			}
+			MILK_POTIONS.put(entityType, potion);
+		}
 	}
 	private static final String CONFIG_FILE_OTHER = CONFIG_DIR + "other.json";
 	private static final String DEFAULT_OTHER = """
@@ -853,7 +870,11 @@ public class PotionConfigMod implements ModInitializer {
 		"splash_poison": "poison",
 		"splash_weakness": "flames"
 	},
-	"wandering_trader_night": "invisibility"
+	"wandering_trader_night": "invisibility",
+	"milk": {
+		"cow": "potion-config:beer",
+		"skeleton": "potion-config:milk"
+	}
 }
 """;
 }
