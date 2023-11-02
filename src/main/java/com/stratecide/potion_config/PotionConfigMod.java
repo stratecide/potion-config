@@ -100,6 +100,7 @@ public class PotionConfigMod implements ModInitializer {
 	public static String MYSTERY_SPLASH_POTION = null;
 	public static String MYSTERY_LINGERING_POTION = null;
 	public static String MYSTERY_ARROW = null;
+	public static boolean BLOCKS_DROP_SELF = true;
 	public static int DURATION_DEFAULT = 3600;
 	public static String MILK_POTION = null;
 	public static final TrackedDataHandler<PotionColorList> POTION_PARTICLE_COLORS = TrackedDataHandler.of(PotionColorList::writePotionColors, PotionColorList::readPotionColors);
@@ -113,7 +114,6 @@ public class PotionConfigMod implements ModInitializer {
 	public void onInitialize() {
 		StatusEffect test = CustomStatusEffect.MILK;
 		loadConfigPotions();
-		//loadConfigArrows();
 		loadConfigRecipes();
 		loadConfigFuel();
 		loadConfigOther();
@@ -206,21 +206,25 @@ public class PotionConfigMod implements ModInitializer {
 		if (json.has("mystery_arrow")) {
 			MYSTERY_ARROW = json.get("mystery_arrow").getAsString();
 		}
+		if (json.has("blocks_drop_self")) {
+			BLOCKS_DROP_SELF = json.get("blocks_drop_self").getAsBoolean();
+		}
 	}
 	private static final String CONFIG_FILE_MAIN = CONFIG_DIR + "general.json";
 	private static final String DEFAULT_MAIN = """
 {
 	"stack_size": 16,
 	"stack_size_splash": 4,
-	"stack_size_lingering": 3,
+	"stack_size_lingering": 4,
 	"glint": false,
-	"hide_effects_below_chance": 0.3,
+	"hide_effects_below_chance": 0.0,
 	"hide_after_effects": false,
 	"default_duration": 3600,
 	"mystery_normal": "awkward",
 	"mystery_splash": "thick",
 	"mystery_lingering": "rainbow_gradient",
 	"mystery_arrow": "floating",
+	"blocks_drop_self": true,
 	"milk": "milk"
 }""";
 
@@ -313,6 +317,10 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String DEFAULT_EFFECTS = """
 {
 	"water": { "color": "0000ff" },
+	"milk": {
+		"color": "ffffff",
+		"potion-config:milk": {}
+	},
 	"mundane": {
 		"color": "6633ff"
 	},
@@ -332,10 +340,6 @@ public class PotionConfigMod implements ModInitializer {
 		"minecraft:glowing": { "chance": 0.4 }
 	},
 	
-	"milk": {
-		"color": "ffffff",
-		"potion-config:milk": {}
-	},
 	"lemonade": {
 		"color": "ddff00",
 		"duration": 1200,

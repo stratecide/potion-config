@@ -17,6 +17,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.*;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
@@ -34,6 +35,12 @@ import java.util.function.Supplier;
 
 @Environment(EnvType.CLIENT)
 public class FloorBlockModel implements UnbakedModel, BakedModel, FabricBakedModel {
+    private static final SpriteIdentifier[] DEFAULT_SPRITE_IDS = new SpriteIdentifier[]{
+            new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(PotionConfigMod.MOD_ID, "block/floor_default/top")),
+            new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(PotionConfigMod.MOD_ID, "block/floor_default/sides")),
+            new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(PotionConfigMod.MOD_ID, "block/floor_default/bottom")),
+    };
+    private static final Sprite[] DEFAULT_SPRITES = new Sprite[3];
     private final SpriteIdentifier[] SPRITE_IDS;
     private Sprite[] SPRITES = new Sprite[3];
     private Mesh mesh;
@@ -60,6 +67,11 @@ public class FloorBlockModel implements UnbakedModel, BakedModel, FabricBakedMod
     public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
         for (int i = 0; i < SPRITE_IDS.length; i++) {
             SPRITES[i] = textureGetter.apply(SPRITE_IDS[i]);
+            if (SPRITES[i] instanceof MissingSprite) {
+                if (DEFAULT_SPRITES[i] == null)
+                    DEFAULT_SPRITES[i] = textureGetter.apply(DEFAULT_SPRITE_IDS[i]);
+                SPRITES[i] = DEFAULT_SPRITES[i];
+            }
         }
         Renderer renderer = RendererAccess.INSTANCE.getRenderer();
         MeshBuilder builder = renderer.meshBuilder();

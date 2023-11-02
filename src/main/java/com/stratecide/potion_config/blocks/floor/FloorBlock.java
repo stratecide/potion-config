@@ -1,14 +1,20 @@
 package com.stratecide.potion_config.blocks.floor;
 
 import com.stratecide.potion_config.CustomPotion;
+import com.stratecide.potion_config.PotionConfigMod;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class FloorBlock extends Block {
     protected final ParticleEffect particle;
@@ -35,5 +41,12 @@ public class FloorBlock extends Block {
         double g = (double)(color >> 8 & 0xFF) / 255.0;
         double b = (double)(color >> 0 & 0xFF) / 255.0;
         world.addParticle(this.particle, x, y, z, r, g, b);
+    }
+
+    @Override
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+        if (PotionConfigMod.BLOCKS_DROP_SELF)
+            return List.of(new ItemStack(Registry.ITEM.get(Registry.BLOCK.getId(this))));
+        return super.getDroppedStacks(state, builder);
     }
 }

@@ -17,6 +17,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.*;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.SpriteIdentifier;
@@ -34,6 +35,8 @@ import java.util.function.Supplier;
 
 @Environment(EnvType.CLIENT)
 public class PortalBlockModel implements UnbakedModel, BakedModel, FabricBakedModel {
+    private static final SpriteIdentifier DEFAULT_SPRITE_ID = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(PotionConfigMod.MOD_ID, "block/portal_default"));
+    private static Sprite DEFAULT_SPRITE;
     private final SpriteIdentifier SPRITE_ID;
     private Sprite SPRITE;
     private Mesh mesh;
@@ -57,6 +60,11 @@ public class PortalBlockModel implements UnbakedModel, BakedModel, FabricBakedMo
     @Override
     public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
         SPRITE = textureGetter.apply(SPRITE_ID);
+        if (SPRITE instanceof MissingSprite) {
+            if (DEFAULT_SPRITE == null)
+                DEFAULT_SPRITE = textureGetter.apply(DEFAULT_SPRITE_ID);
+            SPRITE = DEFAULT_SPRITE;
+        }
         Renderer renderer = RendererAccess.INSTANCE.getRenderer();
         MeshBuilder builder = renderer.meshBuilder();
         QuadEmitter emitter = builder.getEmitter();

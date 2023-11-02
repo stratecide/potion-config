@@ -1,20 +1,26 @@
 package com.stratecide.potion_config.blocks.portal;
 
 import com.stratecide.potion_config.CustomPotion;
+import com.stratecide.potion_config.PotionConfigMod;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class PortalBlock extends PillarBlock {
 
@@ -26,7 +32,7 @@ public class PortalBlock extends PillarBlock {
     protected final CustomPotion potion;
 
     public PortalBlock(ParticleEffect particle, CustomPotion potion) {
-        super(FabricBlockSettings.of(Material.GLASS).nonOpaque().noCollision().sounds(BlockSoundGroup.GLASS));
+        super(FabricBlockSettings.of(Material.GLASS).nonOpaque().noCollision().strength(1.0f).sounds(BlockSoundGroup.GLASS));
         this.particle = particle;
         this.potion = potion;
     }
@@ -74,5 +80,12 @@ public class PortalBlock extends PillarBlock {
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         return this.getDefaultState().with(AXIS, ctx.getPlayerLookDirection().getAxis());
+    }
+
+    @Override
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+        if (PotionConfigMod.BLOCKS_DROP_SELF)
+            return List.of(new ItemStack(Registry.ITEM.get(Registry.BLOCK.getId(this))));
+        return super.getDroppedStacks(state, builder);
     }
 }
