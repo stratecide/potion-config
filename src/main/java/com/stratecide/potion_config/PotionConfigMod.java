@@ -854,6 +854,9 @@ public class PotionConfigMod implements ModInitializer {
 			}
 			MILK_POTIONS.put(entityType, potion);
 		}
+		if (!CUSTOM_POTIONS.containsKey(Registry.POTION.get(MILK_BUCKET_POTION))) {
+			LOGGER.warn("MilkBucket potion " + MILK_BUCKET_POTION + " doesn't exist!");
+		}
 	}
 	private static final String CONFIG_FILE_OTHER = CONFIG_DIR + "other.json";
 	private static final String DEFAULT_OTHER = """

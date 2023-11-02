@@ -21,7 +21,17 @@
   "effect.potion-config.finesse": "Finesse",
   "effect.potion-config.jump-drop": "Jump Debuff",
 
-  "item.minecraft.potion.effect.mystery": "Mysterious Potion",
+  "potion-config.potion": "Bottle of %s",
+  "potion-config.splash_potion": "Splash Potion of %s",
+  "potion-config.lingering_potion": "Lingering Potion of %s",
+  "potion-config.crafting_potion": "Crafting Potion of %s",
+  "potion-config.arrow": "Arrow of %s",
+  "potion-config.floor": "%s Floor",
+  "potion-config.portal": "Portal of %s",
+
+  "potion-config.potion.effect.milk": "Milk",
+  "potion-config.floor_jump_pad": "Jump Pad",
+
   "item.minecraft.potion.effect.milk": "Bottle of Milk",
   "item.minecraft.potion.effect.lemonade": "Lemonade",
   "item.minecraft.potion.effect.beer": "Beer",
