@@ -117,7 +117,6 @@ public class PotionConfigMod implements ModInitializer {
 		StatusEffect test = CustomStatusEffect.MILK;
 		loadConfigPotions();
 		loadConfigRecipes();
-		loadConfigFuel();
 		loadConfigOther();
 	}
 
@@ -812,24 +811,6 @@ public class PotionConfigMod implements ModInitializer {
 	}
 }""";
 
-	private void loadConfigFuel() {
-		JsonObject jsonObject = loadConfig(CONFIG_FILE_FUEL, DEFAULT_FUEL).getAsJsonObject();
-		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-			Identifier identifier = new Identifier(entry.getKey());
-			if (!Registry.ITEM.containsId(identifier)) {
-				LOGGER.warn("Unknown fuel item " + identifier);
-				continue;
-			}
-			FUELS.put(identifier, entry.getValue().getAsInt());
-		}
-	}
-	private static final String CONFIG_FILE_FUEL = CONFIG_DIR + "fuel.json";
-	private static final String DEFAULT_FUEL = """
-{
-	"minecraft:blaze_powder": 20,
-	"lapis_lazuli": 10
-}""";
-
 	private void loadConfigOther() {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_OTHER, DEFAULT_OTHER).getAsJsonObject();
 		if (jsonObject.has("witch")) {
@@ -857,6 +838,14 @@ public class PotionConfigMod implements ModInitializer {
 		if (!CUSTOM_POTIONS.containsKey(Registry.POTION.get(MILK_BUCKET_POTION))) {
 			LOGGER.warn("MilkBucket potion " + MILK_BUCKET_POTION + " doesn't exist!");
 		}
+		for (Entry<String, JsonElement> entry : jsonObject.get("fuel").getAsJsonObject().entrySet()) {
+			Identifier identifier = new Identifier(entry.getKey());
+			if (!Registry.ITEM.containsId(identifier)) {
+				LOGGER.warn("Unknown fuel item " + identifier);
+				continue;
+			}
+			FUELS.put(identifier, entry.getValue().getAsInt());
+		}
 	}
 	private static final String CONFIG_FILE_OTHER = CONFIG_DIR + "other.json";
 	private static final String DEFAULT_OTHER = """
@@ -877,6 +866,10 @@ public class PotionConfigMod implements ModInitializer {
 	"milk": {
 		"cow": "potion-config:beer",
 		"skeleton": "potion-config:milk"
+	},
+	"fuel": {
+		"minecraft:blaze_powder": 20,
+		"lapis_lazuli": 10
 	}
 }
 """;
