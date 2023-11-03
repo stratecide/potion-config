@@ -9,6 +9,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -67,6 +68,7 @@ public class CustomStatusEffect extends StatusEffect {
     public static final CustomStatusEffect DRUNK = register("drunk", new Drunk(StatusEffectCategory.HARMFUL, 0x448822));
     public static final CustomStatusEffect ELYTRA = register("elytra", new ElytraEffect(StatusEffectCategory.BENEFICIAL, 0x66bbff));
     public static final CustomStatusEffect NO_FALL_DAMAGE = register("no_fall_damage", new NoFallDamage(StatusEffectCategory.BENEFICIAL, 0x236454));
+    public static final CustomStatusEffect REMOVE_EFFECT = RemoveEffect.getOrCreate(StatusEffects.POISON);
 
     private static CustomStatusEffect register(String id, CustomStatusEffect entry) {
         return Registry.register(Registry.STATUS_EFFECT, new Identifier(PotionConfigMod.MOD_ID, id), entry);

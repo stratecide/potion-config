@@ -323,6 +323,11 @@ public class PotionConfigMod implements ModInitializer {
 		"color": "ffffff",
 		"potion-config:milk": {}
 	},
+	"honey": {
+		"color": "ff9116",
+		"potion-config:remove_effect": { "effect": "poison" }
+	},
+
 	"mundane": {
 		"color": "6633ff"
 	},

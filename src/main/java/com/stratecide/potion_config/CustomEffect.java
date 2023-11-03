@@ -2,13 +2,11 @@ package com.stratecide.potion_config;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.stratecide.potion_config.effects.AllOrNone;
-import com.stratecide.potion_config.effects.CustomStatusEffect;
-import com.stratecide.potion_config.effects.Particles;
-import com.stratecide.potion_config.effects.RandomChoice;
+import com.stratecide.potion_config.effects.*;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -56,6 +54,12 @@ public class CustomEffect {
                 }
             }
             effect = ((AllOrNone) effect).withChildren(effects);
+        } else if (effect instanceof RemoveEffect) {
+            Identifier identifier = new Identifier(jsonObject.get("effect").getAsString());
+            StatusEffect statusEffect = Registry.STATUS_EFFECT.get(identifier);
+            if (statusEffect == StatusEffects.LUCK && !identifier.equals(Registry.STATUS_EFFECT.getId(StatusEffects.LUCK)))
+                throw new RuntimeException("Unknown status effect " + identifier);
+            effect = RemoveEffect.getOrCreate(statusEffect);
         }
         this.effect = effect;
         if (jsonObject.has("chance")) {
