@@ -26,8 +26,6 @@ This mod doesn't replace potions from any loot tables.
 If loot tables contain potions with ids that aren't present in your config, they'll become "Uncraftable Potion"s.
 To avoid finding uncraftable potions, the following vanilla loot tables may have to be modified using a data pack:
 - data/minecraft/loot_tables/entities/stray.json
-- data/minecraft/loot_tables/entities/witch.json
-- data/minecraft/loot_tables/entities/wandering_trader.json
 - data/minecraft/loot_tables/chests/ancient_city.json
 - data/minecraft/loot_tables/chests/buried_treasure.json
 - data/minecraft/loot_tables/gameplay/piglin_bartering.json

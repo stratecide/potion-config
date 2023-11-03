@@ -54,7 +54,7 @@ public class PortalBlockModel implements UnbakedModel, BakedModel, FabricBakedMo
 
     @Override
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
-        return List.of(SPRITE_ID);
+        return List.of(SPRITE_ID, DEFAULT_SPRITE_ID);
     }
 
     @Override

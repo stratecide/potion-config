@@ -61,7 +61,9 @@ public abstract class PotionItemMixin extends Item {
         if (this.isIn(group)) {
             for (CustomPotion potion : PotionConfigMod.CUSTOM_POTIONS.values()) {
                 if (potion.getPotionItem() == this) {
-                    stacks.add(PotionUtil.setPotion(new ItemStack(this), Registry.POTION.get(potion.potionId)));
+                    ItemStack itemStack = PotionUtil.setPotion(new ItemStack(this), Registry.POTION.get(potion.potionId));
+                    if (itemStack.getItem() instanceof PotionItem)
+                        stacks.add(itemStack);
                 }
             }
             ci.cancel();

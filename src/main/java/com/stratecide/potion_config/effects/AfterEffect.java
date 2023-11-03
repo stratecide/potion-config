@@ -30,7 +30,7 @@ public class AfterEffect extends CustomStatusEffect {
     }
 
     public static Identifier parse(JsonObject jsonObject) {
-        int duration = PotionConfigMod.DURATION_DEFAULT;
+        int duration = -1;
         List<CustomEffect> effects = new ArrayList<>();
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String key = entry.getKey();
@@ -50,6 +50,9 @@ public class AfterEffect extends CustomStatusEffect {
             }
         }
         Identifier identifier = new Identifier(PotionConfigMod.MOD_ID, AFTER_EFFECT_PREFIX + NEXT_ID);
+        if (duration < 0) {
+            throw new RuntimeException("Missing duration for after-effect " + identifier);
+        }
         NEXT_ID += 1;
         Registry.register(Registry.STATUS_EFFECT, identifier, new AfterEffect(duration, effects));
         return identifier;

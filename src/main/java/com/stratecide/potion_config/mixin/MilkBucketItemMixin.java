@@ -20,7 +20,11 @@ public class MilkBucketItemMixin {
         if (PotionConfigMod.MILK_BUCKET_POTION != Potions.EMPTY) {
             CustomPotion potion = PotionConfigMod.getCustomPotion(PotionConfigMod.MILK_BUCKET_POTION);
             for (StatusEffectInstance statusEffectInstance : potion.generateEffectInstances()) {
-                entity.addStatusEffect(statusEffectInstance);
+                if (statusEffectInstance.getEffectType().isInstant()) {
+                    statusEffectInstance.getEffectType().applyInstantEffect(entity, null, entity, statusEffectInstance.getAmplifier(), 1.0);
+                } else {
+                    entity.addStatusEffect(statusEffectInstance);
+                }
             }
             return true;
         } else {

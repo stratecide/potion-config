@@ -60,7 +60,7 @@ public class FloorBlockModel implements UnbakedModel, BakedModel, FabricBakedMod
 
     @Override
     public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
-        return Arrays.asList(SPRITE_IDS);
+        return List.of(SPRITE_IDS[0], SPRITE_IDS[1], SPRITE_IDS[1], DEFAULT_SPRITE_IDS[0], DEFAULT_SPRITE_IDS[1], DEFAULT_SPRITE_IDS[2]);
     }
 
     @Override

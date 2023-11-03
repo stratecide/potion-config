@@ -19,7 +19,11 @@ public class HoneyBottleItemMixin {
         if (PotionConfigMod.HONEY_BOTTLE_POTION != Potions.EMPTY) {
             CustomPotion potion = PotionConfigMod.getCustomPotion(PotionConfigMod.HONEY_BOTTLE_POTION);
             for (StatusEffectInstance statusEffectInstance : potion.generateEffectInstances()) {
-                user.addStatusEffect(statusEffectInstance);
+                if (statusEffectInstance.getEffectType().isInstant()) {
+                    statusEffectInstance.getEffectType().applyInstantEffect(user, null, user, statusEffectInstance.getAmplifier(), 1.0);
+                } else {
+                    user.addStatusEffect(statusEffectInstance);
+                }
             }
             return true;
         } else {

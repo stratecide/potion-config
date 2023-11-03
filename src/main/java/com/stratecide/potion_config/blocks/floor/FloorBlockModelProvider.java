@@ -21,7 +21,7 @@ public class FloorBlockModelProvider implements ModelVariantProvider {
     }
 
     @Override
-    public @Nullable UnbakedModel loadModelVariant(ModelIdentifier modelId, ModelProviderContext context) throws ModelProviderException {
+    public @Nullable UnbakedModel loadModelVariant(ModelIdentifier modelId, ModelProviderContext context) {
         if (PotionConfigMod.MOD_ID.equals(modelId.getNamespace()) && modelId.getPath().equals(blockId)) {
             return model;
         } else {

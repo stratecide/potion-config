@@ -103,7 +103,6 @@ public class PotionConfigMod implements ModInitializer {
 	public static String MYSTERY_LINGERING_POTION = null;
 	public static String MYSTERY_ARROW = null;
 	public static boolean BLOCKS_DROP_SELF = true;
-	public static int DURATION_DEFAULT = 3600;
 	public static Potion MILK_BUCKET_POTION = Potions.EMPTY;
 	public static Potion HONEY_BOTTLE_POTION = Potions.EMPTY;
 	public static final TrackedDataHandler<PotionColorList> POTION_PARTICLE_COLORS = TrackedDataHandler.of(PotionColorList::writePotionColors, PotionColorList::readPotionColors);
@@ -190,9 +189,6 @@ public class PotionConfigMod implements ModInitializer {
 		if (json.has("hide_after_effects")) {
 			HIDE_AFTER_EFFECTS = json.get("hide_after_effects").getAsBoolean();
 		}
-		if (json.has("default_duration")) {
-			DURATION_DEFAULT = json.get("default_duration").getAsInt();
-		}
 		if (json.has("mystery_normal")) {
 			MYSTERY_NORMAL_POTION = json.get("mystery_normal").getAsString();
 		}
@@ -218,7 +214,6 @@ public class PotionConfigMod implements ModInitializer {
 	"glint": false,
 	"hide_effects_below_chance": 0.0,
 	"hide_after_effects": false,
-	"default_duration": 3600,
 	"mystery_normal": "awkward",
 	"mystery_splash": "thick",
 	"mystery_lingering": "rainbow_gradient",
@@ -314,76 +309,226 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String CONFIG_FILE_EFFECTS = CONFIG_DIR + "effects.json";
 	private static final String DEFAULT_EFFECTS = """
 {
-	"water": { "color": "0000ff" },
+	"water": {
+		"color": "0000ff",
+		"duration": 1
+	},
 	"milk": {
 		"color": "ffffff",
+		"duration": 1,
 		"potion-config:milk": {}
 	},
 	"honey": {
 		"color": "ff9116",
+		"duration": 1,
 		"potion-config:remove_effect": { "effect": "poison" }
 	},
 
-	"mundane": {
-		"color": "6633ff"
-	},
-	"thick": {
-		"color": "cc66ff",
-		"duration": 200,
-		"minecraft:wither": { "chance": 0.2 },
-		"minecraft:regeneration": { "chance": 0.2 },
-		"minecraft:nausea": { "chance": 0.4 }
-	},
-	"awkward": {
+	"weakness": {
 		"type": "splash",
-		"color": "3388ff",
-		"duration": 200,
-		"minecraft:poison": { "chance": 0.2 },
-		"minecraft:regeneration": { "chance": 0.2 },
-		"minecraft:glowing": { "chance": 0.4 }
+		"color": "484D48",
+		"duration": 1200,
+		"minecraft:weakness": {},
+		"potion-config:particles": { "color": "484D48" }
 	},
-	
+	"strong_healing": {
+		"color": "F82423",
+		"duration": 10,
+		"minecraft:instant_health": { "amplifier": 1 },
+		"potion-config:particles": { "color": "F82423", "amplifier": 400 }
+	},
+	"slowness": {
+		"type": ["arrow"],
+		"color": "5A6C81",
+		"duration": 600,
+		"minecraft:slowness": { "amplifier": 1 },
+		"potion-config:particles": { "color": "5A6C81" }
+	},
+	"paralysis": {
+		"type": "splash",
+		"replaces": "minecraft:strong_slowness",
+		"color": "5A6C81",
+		"duration": 80,
+		"minecraft:slowness": { "amplifier": 5 },
+			"potion-config:jump_drop": { "amplifier": 1 },
+		"potion-config:particles": { "color": "5A6C81", "amplifier": 50 }
+	},
+	"strong_regeneration": {
+		"type": "linger",
+		"color": "F82423",
+		"duration": 10,
+		"minecraft:instant_health": {},
+		"potion-config:particles": { "color": "F82423", "amplifier": 200 }
+	},
+	"water_breathing": {
+		"color": "2E5299",
+		"duration": 3600,
+		"minecraft:water_breathing": {},
+		"potion-config:particles": { "color": "2E5299" }
+	},
+	"fire_resistance": {
+		"color": "E49A3A",
+		"duration": 3600,
+		"minecraft:fire_resistance": {},
+		"potion-config:particles": { "color": "E49A3A" }
+	},
+
 	"lemonade": {
 		"color": "ddff00",
 		"duration": 1200,
 		"minecraft:speed": { "amplifier": 1 },
 		"minecraft:jump_boost": {},
+		"potion-config:particles": { "color": "ddff00" },
 		"after": {
 			"duration": 100,
-			"minecraft:slowness": { "chance": 0.75 },
-			"potion-config:jump_drop": { "chance": 0.5 }
+			"minecraft:slowness": {},
+			"potion-config:particles": { "color": "ddff00" }
 		}
 	},
 	"beer": {
 		"color": "d8c068",
 		"duration": 600,
 		"potion-config:drunk": { "chance": 0.5 },
-		"minecraft:nausea": {}
-	},
-	"unfiltered_cider": {
-		"color": "b9812f",
-		"duration": 600,
-		"potion-config:drunk": {},
-		"minecraft:nausea": { "amplifier": 1 },
-		"minecraft:hunger": { "chance": 0.6 },
-		"minecraft:darkness": { "chance": 0.6 }
+		"minecraft:nausea": {},
+		"minecraft:absorption": {},
+		"potion-config:particles": { "color": "d8c068" },
+		"after": {
+			"duration": 50,
+			"potion-config:drunk": { "chance": 0.5 }
+		}
 	},
 	"cider": {
 		"color": "b9812f",
 		"duration": 600,
 		"potion-config:drunk": {},
 		"minecraft:nausea": { "amplifier": 1 },
-		"minecraft:hunger": { "chance": 0.2 }
+		"minecraft:absorption": { "amplifier": 1 },
+		"minecraft:hunger": { "chance": 0.2 },
+		"potion-config:particles": { "color": "b9812f" },
+		"after": {
+			"duration": 50,
+			"potion-config:drunk": { "chance": 0.5 },
+			"minecraft:nausea": { "chance": 0.5 }
+		}
 	},
-	"vodka": {
-		"color": "bbbbbb",
+
+	"strength": {
+		"color": "932423",
+		"duration": 100,
+		"minecraft:slowness": { "amplifier": 3 },
+		"minecraft:resistance": { "amplifier": 2 },
+		"potion-config:knockback_resistance": { "amplifier": 2 },
+		"potion-config:particles": { "color": "5A6C81" },
+		"after": {
+			"duration": 300,
+			"minecraft:strength": { "amplifier": 1 },
+			"minecraft:resistance": { "amplifier": 1 },
+			"potion-config:knockback_resistance": {},
+			"potion-config:particles": { "color": "932423" }
+		}
+	},
+	"harming": {
+		"type": "linger",
+		"color": "430A09",
+		"duration": 10,
+		"minecraft:instant_damage": {},
+		"potion-config:particles": { "color": "430A09", "amplifier": 200 }
+	},
+	"poison": {
+		"type": "splash",
+		"color": "4E9331",
 		"duration": 600,
-		"potion-config:drunk": { "amplifier": 3 },
-		"minecraft:nausea": { "amplifier": 3 },
-		"minecraft:hunger": { "chance": 0.3 }
+		"minecraft:poison": {},
+		"potion-config:particles": { "color": "4E9331" }
 	},
-	"health_gamble": {
+	"night_vision": {
+		"color": "1F1FA1",
+		"duration": 40,
+		"minecraft:blindness": {},
+		"potion-config:particles": { "color": "1F1FA1" },
+		"after": {
+			"duration": 3600,
+			"minecraft:night_vision": {},
+			"potion-config:particles": { "color": "1F1FA1" }
+		}
+	},
+	"invisibility": {
+		"color": "7F8392",
+		"duration": 40,
+		"minecraft:glowing": {},
+		"potion-config:particles": { "color": "FFFFFF", "amplifier": 200 },
+		"after": {
+			"duration": 1200,
+			"minecraft:invisibility": {}
+		}
+	},
+	"slow_falling": {
+		"color": "FFEFD1",
+		"duration": 1800,
+		"minecraft:slow_falling": {},
+		"potion-config:particles": { "color": "FFEFD1" }
+	},
+
+	"haste": {
+		"replaces": "minecraft:leaping",
+		"color": "D9C043",
+		"duration": 40,
+		"minecraft:mining_fatigue": {},
+		"potion-config:particles": { "color": "D9C043" },
+		"after": {
+			"duration": 3600,
+			"minecraft:haste": { "amplifier": 1 },
+			"potion-config:finesse": {},
+			"potion-config:particles": { "color": "D9C043" }
+		}
+	},
+	"dolphins_grace": {
+		"type": ["portal"],
+		"color": "88A3BE",
+		"duration": 100,
+		"minecraft:dolphins_grace": { "amplifier": 1 },
+		"minecraft:water_breathing": {},
+		"potion-config:particles": { "color": "88A3BE" }
+	},
+	"gliding": {
+		"type": ["portal"],
+		"color": "787878",
+		"duration": 1200,
+		"potion-config:elytra": {},
+		"potion-config:particles": { "color": "787878" },
+		"after": {
+			"duration": 80,
+			"potion-config:no_fall_damage": {}
+		}
+	},
+	"elytra_boost": {
+		"type": ["portal"],
+		"color": "787878",
+		"duration": 200,
+		"potion-config:elytra": { "amplifier": 1 },
+		"potion-config:particles": { "color": "787878", "amplifier": 50 }
+	},
+	"jump_pad": {
+		"type": ["floor"],
+		"color": "1B8BCB",
+		"duration": 10,
+		"minecraft:jump_boost": { "amplifier": 7 },
+		"potion-config:particles": { "color": "1B8BCB", "amplifier": 10 },
+		"after": {
+			"duration": 40,
+			"potion-config:no_fall_damage": {}
+		}
+	},
+	"boost_pad": {
+		"type": ["floor"],
+		"color": "C83A0E",
+		"duration": 40,
+		"minecraft:speed": { "amplifier": 2 },
+		"potion-config:particles": { "color": "C83A0E", "amplifier": 5 }
+	},
+	"gambling": {
 		"color": "F87D23",
+		"duration": 3600,
 		"potion-config:random_choice": {
 			"options": [
 				{
@@ -405,349 +550,49 @@ public class PotionConfigMod implements ModInitializer {
 			]
 		}
 	},
-	"elytra": {
-		"type": ["portal"],
-		"color": "FFEFD1",
-		"duration": 1000,
-		"potion-config:elytra": { "amplifier": 2 },
-		"potion-config:particles": { "color": "FFEFD1" }
-	},
-	"slow_falling": {
-		"color": "FFEFD1",
-		"duration": 6000,
-		"minecraft:slow_falling": {},
-		"potion-config:particles": { "color": "FFEFD1" }
-	},
-	"floating": {
-		"type": ["arrow"],
-		"color": "CEFFFF",
-		"duration": 400,
-		"minecraft:levitation": { "amplifier": 2 },
-		"minecraft:speed": {},
-		"potion-config:particles": { "color": "CEFFFF" },
-		"after": {
-			"duration": 240,
-			"minecraft:slow_falling": {}
-		}
-	},
-	"jump_pad": {
-		"type": [{"craft": "floor", "ingredient": "diamond", "count": 7}],
-		"color": "ff7000",
-		"duration": 5,
-		"minecraft:jump_boost": { "amplifier": 7 },
-		"potion-config:particles": { "color": "ff7000" },
-		"after": {
-			"duration": 40,
-			"potion-config:no_fall_damage": {}
-		}
-	},
-	"creative_flight": {
-		"color": "66bbff",
-		"potion-config:creative_flight": {},
-		"after": {
-			"duration": 240,
-			"minecraft:slow_falling": {}
-		}
-	},
-	"turtle_master": {
-		"color": "666999",
-		"potion-config:knockback_resistance": { "amplifier": 2 },
-		"minecraft:slowness": { "amplifier": 2 },
-		"minecraft:resistance": { "amplifier": 2 },
-		"potion-config:jump_drop": {},
-		"potion-config:particles": { "color": "666999" }
-	},
-	"invisibility": {
-		"color": "7F8392",
-		"minecraft:invisibility": {},
-		"minecraft:darkness": {}
-	},
-	"fire_resistance_witch": {
-		"color": "E49A3A",
-		"duration": 2400,
-		"potion-config:particles": { "color": "E49A3A" },
-		"minecraft:fire_resistance": {}
-	},
-	"water_breathing_witch": {
-		"color": "2E5299",
-		"duration": 2400,
-		"potion-config:particles": { "color": "2E5299" },
-		"minecraft:water_breathing": {}
-	},
-	"regeneration_witch": {
-		"color": "CD5CAB",
-		"duration": 2400,
-		"potion-config:particles": { "color": "CD5CAB" },
-		"minecraft:regeneration": {}
-	},
-	
-	"swiftness": {
-		"color": "7CAFC6",
-		"minecraft:speed": { "amplifier": 1 },
-		"minecraft:jump_boost": {},
-		"potion-config:particles": { "color": "7CAFC6" },
-		"after": {
-			"duration": 100,
-			"minecraft:slowness": { "chance": 0.75 },
-			"potion-config:jump_drop": { "chance": 0.5 }
-		}
-	},
-	"long_swiftness": {
-		"color": "7CAFC6",
-		"duration": 12000,
-		"minecraft:speed": { "amplifier": 1 },
-		"minecraft:jump_boost": {},
-		"potion-config:particles": { "color": "7CAFC6" },
-		"after": {
-			"duration": 100,
-			"minecraft:slowness": { "chance": 0.75 },
-			"potion-config:jump_drop": { "chance": 0.5 }
-		}
-	},
-	"strength": {
-		"color": "932423",
-		"minecraft:strength": {},
-		"minecraft:haste": { "amplifier": 1 },
-		"potion-config:particles": { "color": "932423" },
-		"after": {
-			"duration": 100,
-			"minecraft:mining_fatigue": { "chance": 0.7 },
-			"minecraft:slowness": { "chance": 0.7 },
-			"minecraft:weakness": { "chance": 0.7 }
-		}
-	},
-	"night_vision": {
-		"color": "1F1FA1",
-		"minecraft:night_vision": {},
-		"potion-config:particles": {
-			"color": [0, "000000", "88ff88"]
-		},
-		"after": {
-			"duration": 80,
-			"minecraft:blindness": { "chance": 0.7 }
-		}
-	},
-	"water_breathing": {
-		"color": "2E5299",
-		"potion-config:finesse": { "amplifier": 2 },
-		"minecraft:water_breathing": {}
-	},
-	"fire_resistance": {
-		"color": "E49A3A",
-		"potion-config:particles": { "color": "E49A3A" },
-		"minecraft:fire_resistance": {}
-	},
-	"flames": {
-		"type": "splash",
-		"color": "ff6600",
-		"potion-config:flames": { "amplifier": 9 }
-	},
-	"wither": {
-		"color": "352A27",
-		"duration": 80,
-		"minecraft:wither": {},
-		"potion-config:particles": { "color": "352A27" }
-	},
-	
-	"poison": {
+	"rainbow": {
 		"type": "linger",
-		"color": "4E9331",
-		"duration": 100,
-		"minecraft:poison": {},
-		"potion-config:particles": { "color": "4E9331" }
-	},
-	"short_slowness": {
-		"type": "splash",
-		"color": "5A6C81",
-		"duration": 200,
-		"minecraft:slowness": {},
-		"potion-config:particles": { "color": "5A6C81" }
-	},
-	"healing": {
-		"type": "linger",
-		"color": "CD5CAB",
-		"minecraft:instant_health": { "amplifier": 1 }
-	},
-	"harming": {
-		"type": "linger",
-		"color": "430A09",
-		"minecraft:instant_damage": { "amplifier": 1 }
-	},
-	
-	"black": {
-		"type": "linger",
-		"color": "1D1D21",
+		"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"],
+		"duration": 600,
 		"potion-config:particles": {
 			"amplifier": 50,
-			"color": "1D1D21"
+			"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"]
 		}
 	},
-	"red": {
-		"type": "linger",
-		"color": "B02E26",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "B02E26"
-		}
-	},
-	"green": {
-		"type": "linger",
-		"color": "5E7C16",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "5E7C16"
-		}
-	},
-	"brown": {
-		"type": "linger",
-		"color": "835432",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "835432"
-		}
-	},
-	"blue": {
-		"type": "linger",
-		"color": "3C44AA",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "3C44AA"
-		}
-	},
-	"purple": {
-		"type": "linger",
-		"color": "8932B8",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "8932B8"
-		}
-	},
-	"cyan": {
-		"type": "linger",
-		"color": "169C9C",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "169C9C"
-		}
-	},
-	"light_gray": {
-		"type": "linger",
-		"color": "9D9D97",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "9D9D97"
-		}
-	},
-	"gray": {
-		"type": "linger",
-		"color": "474F52",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "474F52"
-		}
-	},
-	"pink": {
-		"type": "linger",
-		"color": "F38BAA",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "F38BAA"
-		}
-	},
-	"lime": {
-		"type": "linger",
-		"color": "80C71F",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "80C71F"
-		}
-	},
-	"yellow": {
-		"type": "linger",
-		"color": "FED83D",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "FED83D"
-		}
-	},
-	"light_blue": {
-		"type": "linger",
-		"color": "3AB3DA",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "3AB3DA"
-		}
-	},
-	"magenta": {
-		"type": "linger",
-		"color": "C74EBD",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "C74EBD"
-		}
-	},
-	"orange": {
-		"type": "linger",
-		"color": "F9801D",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "F9801D"
-		}
-	},
-	"white": {
-		"type": "linger",
-		"color": "F9FFFE",
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": "F9FFFE"
-		}
-	},
-	
-	"fire_gradient": {
-		"type": "linger",
-		"color": [20, "ff0000", "ffff00"],
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": [20, "ff0000", "ffff00"]
-		}
-	},
-	"black_white_gradient": {
-		"type": "linger",
-		"color": [40, "000000", "000000", "ffffff", "ffffff"],
-		"potion-config:particles": {
-			"amplifier": 50,
-			"color": [40, "000000", "000000", "ffffff", "ffffff"]
-		}
-	},
-	"cloud_gradient": {
+
+	"mundane": {
 		"type": "linger",
 		"color": [0, "F9FFFE", "F9FFFE", "3AB3DA"],
+		"duration": 200,
 		"potion-config:particles": {
 			"amplifier": 50,
 			"color": [0, "F9FFFE", "F9FFFE", "3AB3DA"]
 		}
 	},
-	"rainbow_gradient": {
+	"thick": {
 		"type": "linger",
-		"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"],
+		"color": [20, "ff0000", "ffff00"],
+		"duration": 100,
+		"potion-config:flames": { "amplifier": 4 },
 		"potion-config:particles": {
 			"amplifier": 50,
-			"color": [20, "ff0000", "ffff00", "00ff00", "00ffff", "0000ff", "ff00ff"]
+			"color": [20, "ff0000", "ffff00"]
+		}
+	},
+	"awkward": {
+		"type": "splash",
+		"color": [40, "000000", "000000", "ffffff", "ffffff"],
+		"duration": 200,
+		"minecraft:poison": { "chance": 0.3 },
+		"minecraft:regeneration": { "chance": 0.3 },
+		"minecraft:glowing": { "chance": 0.5 },
+		"potion-config:particles": {
+			"amplifier": 50,
+			"color": [40, "000000", "000000", "ffffff", "ffffff"]
 		}
 	}
  }""";
 
-	/**
-	 * recipe has
-	 * 		input pattern
-	 * 		input item type
-	 * 		ingredient (item or itemGroup)
-	 * 		list of
-	 * 			output pattern
-	 * 			output item type
-	 * 			weight (relative chance of being selected)
-	 *
-	 */
 	private void loadConfigRecipes() {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_RECIPES, DEFAULT_RECIPES).getAsJsonObject();
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
@@ -865,28 +710,28 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String DEFAULT_OTHER = """
 {
 	"witch": {
-		"water_breathing": "water_breathing_witch",
-		"fire_resistance": "fire_resistance_witch",
-		"healing": "regeneration_witch",
-		"swiftness": "swiftness",
+		"water_breathing": "water_breathing",
+		"fire_resistance": "fire_resistance",
+		"healing": "strong_healing",
+		"swiftness": "lemonade",
 		"splash_harming": "harming",
-		"splash_healing": "healing",
-		"splash_regeneration": "healing",
-		"splash_slowness": "short_slowness",
+		"splash_healing": "strong_regeneration",
+		"splash_regeneration": "strong_regeneration",
+		"splash_slowness": "paralysis",
 		"splash_poison": "poison",
-		"splash_weakness": "flames"
+		"splash_weakness": "weakness"
 	},
 	"wandering_trader_night": "invisibility",
 	"milk": {
-		"cow": "potion-config:beer",
-		"skeleton": "potion-config:lemonade"
+		"cow": "potion-config:milk",
+		"goat": "potion-config:milk"
 	},
 	"fuel": {
 		"minecraft:blaze_powder": 20,
 		"lapis_lazuli": 10
 	},
-	"milk_bucket": "potion-config:beer",
-	"honey_bottle": "potion-config:lemonade"
+	"milk_bucket": "potion-config:milk",
+	"honey_bottle": "potion-config:honey"
 }
 """;
 }

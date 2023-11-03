@@ -73,7 +73,11 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
     private void injectPotionEffects(LivingEntity target, CallbackInfo ci) {
         if (this.potion != Potions.EMPTY) {
             for (StatusEffectInstance statusEffectInstance : PotionConfigMod.getCustomPotion(this.potion).generateEffectInstances()) {
-                target.addStatusEffect(statusEffectInstance, this.getEffectCause());
+                if (statusEffectInstance.getEffectType().isInstant()) {
+                    statusEffectInstance.getEffectType().applyInstantEffect(getEventSource(), getEffectCause(), target, statusEffectInstance.getAmplifier(), 1.0);
+                } else {
+                    target.addStatusEffect(statusEffectInstance, this.getEffectCause());
+                }
             }
         }
     }

@@ -37,7 +37,7 @@ public class CustomPotion {
 
     public static CustomPotion parse(Identifier potionId, JsonObject jsonObject) {
         PotionType type = PotionType.Normal;
-        int duration = PotionConfigMod.DURATION_DEFAULT;
+        int duration = -1;
         boolean isPermanent = false;
         PotionColor color = PotionColor.neutral();
         Optional<Identifier> afterEffects = Optional.empty();
@@ -69,6 +69,8 @@ public class CustomPotion {
                 case "after":
                     afterEffects = Optional.of(AfterEffect.parse(value.getAsJsonObject()));
                     break;
+                case "replaces":
+                    continue;
                 default:
                     Identifier identifier = new Identifier(key);
                     if (Registry.STATUS_EFFECT.containsId(identifier)) {
@@ -78,6 +80,9 @@ public class CustomPotion {
                         throw new RuntimeException("Unknown status effect " + identifier);
                     }
             }
+        }
+        if (duration < 0) {
+            throw new RuntimeException("Missing duration for potion " + potionId);
         }
         return new CustomPotion(potionId, type, duration, isPermanent, color, afterEffects, effects);
     }

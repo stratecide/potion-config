@@ -26,13 +26,14 @@ public class PortalBlockModelProvider implements ModelVariantProvider {
     }
 
     @Override
-    public @Nullable UnbakedModel loadModelVariant(ModelIdentifier modelId, ModelProviderContext context) throws ModelProviderException {
+    public @Nullable UnbakedModel loadModelVariant(ModelIdentifier modelId, ModelProviderContext context) {
         if (PotionConfigMod.MOD_ID.equals(modelId.getNamespace()) && modelId.getPath().equals(blockId)) {
-            return switch (modelId.getVariant()) {
-                case "axis=x" -> models.get(Direction.Axis.X);
-                case "axis=y" -> models.get(Direction.Axis.Y);
-                default -> models.get(Direction.Axis.Z);
-            };
+            if (modelId.getVariant().contains("axis=x"))
+                return models.get(Direction.Axis.X);
+            else if (modelId.getVariant().contains("axis=y"))
+                return models.get(Direction.Axis.Y);
+            else
+                return models.get(Direction.Axis.Z);
         } else {
             return null;
         }
