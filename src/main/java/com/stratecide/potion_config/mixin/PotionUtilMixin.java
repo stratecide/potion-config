@@ -28,6 +28,12 @@ import java.util.*;
 @Mixin(PotionUtil.class)
 public abstract class PotionUtilMixin {
 
+    @Inject(method = "getPotion(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/potion/Potion;", at = @At("HEAD"), cancellable = true)
+    private static void allowOtherPotionTypes(ItemStack stack, CallbackInfoReturnable<Potion> cir) {
+        if (PotionConfigMod.HONEY_BOTTLE_POTION != Potions.EMPTY && stack.isOf(Items.HONEY_BOTTLE))
+            cir.setReturnValue(PotionConfigMod.HONEY_BOTTLE_POTION);
+    }
+
     @Inject(method = "setPotion", at = @At("HEAD"), cancellable = true)
     private static void replacePotions(ItemStack stack, Potion potion, CallbackInfoReturnable<ItemStack> cir) {
         boolean changed = false;
@@ -47,9 +53,12 @@ public abstract class PotionUtilMixin {
         }
         Item item = stack.getItem();
         CustomPotion customPotion = PotionConfigMod.getCustomPotion(potion);
-        if (stack.getItem() instanceof PotionItem) {
+        if (potion != Potions.EMPTY && potion == PotionConfigMod.HONEY_BOTTLE_POTION) {
+            cir.setReturnValue(new ItemStack(Items.HONEY_BOTTLE));
+            return;
+        } else if (item instanceof PotionItem) {
             item = customPotion.getPotionItem();
-        } else if (stack.isOf(Items.TIPPED_ARROW) && potion != Potions.EMPTY && !PotionConfigMod.ARROW_POTIONS.contains(customPotion)) {
+        } else if (item == Items.TIPPED_ARROW && potion != Potions.EMPTY && !PotionConfigMod.ARROW_POTIONS.contains(customPotion)) {
             potion = Potions.EMPTY;
             changed = true;
         }

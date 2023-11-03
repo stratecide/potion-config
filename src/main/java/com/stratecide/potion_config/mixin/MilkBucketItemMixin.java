@@ -17,9 +17,8 @@ public class MilkBucketItemMixin {
 
     @Redirect(method = "finishUsing", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;clearStatusEffects()Z"))
     boolean milkBucketPotion(LivingEntity entity) {
-        Potion milkPotion = Registry.POTION.get(PotionConfigMod.MILK_BUCKET_POTION);
-        if (milkPotion != Potions.EMPTY) {
-            CustomPotion potion = PotionConfigMod.getCustomPotion(milkPotion);
+        if (PotionConfigMod.MILK_BUCKET_POTION != Potions.EMPTY) {
+            CustomPotion potion = PotionConfigMod.getCustomPotion(PotionConfigMod.MILK_BUCKET_POTION);
             for (StatusEffectInstance statusEffectInstance : potion.generateEffectInstances()) {
                 entity.addStatusEffect(statusEffectInstance);
             }

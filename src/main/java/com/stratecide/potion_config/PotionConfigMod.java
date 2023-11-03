@@ -104,7 +104,8 @@ public class PotionConfigMod implements ModInitializer {
 	public static String MYSTERY_ARROW = null;
 	public static boolean BLOCKS_DROP_SELF = true;
 	public static int DURATION_DEFAULT = 3600;
-	public static Identifier MILK_BUCKET_POTION = null;
+	public static Potion MILK_BUCKET_POTION = Potions.EMPTY;
+	public static Potion HONEY_BOTTLE_POTION = Potions.EMPTY;
 	public static final TrackedDataHandler<PotionColorList> POTION_PARTICLE_COLORS = TrackedDataHandler.of(PotionColorList::writePotionColors, PotionColorList::readPotionColors);
 
 	static {
@@ -192,10 +193,6 @@ public class PotionConfigMod implements ModInitializer {
 		if (json.has("default_duration")) {
 			DURATION_DEFAULT = json.get("default_duration").getAsInt();
 		}
-		MILK_BUCKET_POTION = new Identifier(MOD_ID, "milk");
-		if (json.has("milk_bucket")) {
-			MILK_BUCKET_POTION = new Identifier(json.get("milk_bucket").getAsString());
-		}
 		if (json.has("mystery_normal")) {
 			MYSTERY_NORMAL_POTION = json.get("mystery_normal").getAsString();
 		}
@@ -226,8 +223,7 @@ public class PotionConfigMod implements ModInitializer {
 	"mystery_splash": "thick",
 	"mystery_lingering": "rainbow_gradient",
 	"mystery_arrow": "floating",
-	"blocks_drop_self": true,
-	"milk_bucket": "potion-config:beer"
+	"blocks_drop_self": true
 }""";
 
 	private void loadConfigPotions() {
@@ -840,9 +836,6 @@ public class PotionConfigMod implements ModInitializer {
 			}
 			MILK_POTIONS.put(entityType, potion);
 		}
-		if (!CUSTOM_POTIONS.containsKey(Registry.POTION.get(MILK_BUCKET_POTION))) {
-			LOGGER.warn("MilkBucket potion " + MILK_BUCKET_POTION + " doesn't exist!");
-		}
 		for (Entry<String, JsonElement> entry : jsonObject.get("fuel").getAsJsonObject().entrySet()) {
 			Identifier identifier = new Identifier(entry.getKey());
 			if (!Registry.ITEM.containsId(identifier)) {
@@ -850,6 +843,22 @@ public class PotionConfigMod implements ModInitializer {
 				continue;
 			}
 			FUELS.put(identifier, entry.getValue().getAsInt());
+		}
+		if (jsonObject.has("milk_bucket")) {
+			Identifier identifier = new Identifier(jsonObject.get("milk_bucket").getAsString());
+			Potion potion = Registry.POTION.get(identifier);
+			if (!CUSTOM_POTIONS.containsKey(potion)) {
+				throw new RuntimeException("MilkBucket potion " + identifier + " doesn't exist!");
+			}
+			MILK_BUCKET_POTION = potion;
+		}
+		if (jsonObject.has("honey_bottle")) {
+			Identifier identifier = new Identifier(jsonObject.get("honey_bottle").getAsString());
+			Potion potion = Registry.POTION.get(identifier);
+			if (!CUSTOM_POTIONS.containsKey(potion)) {
+				throw new RuntimeException("HoneyBottle potion " + identifier + " doesn't exist!");
+			}
+			HONEY_BOTTLE_POTION = potion;
 		}
 	}
 	private static final String CONFIG_FILE_OTHER = CONFIG_DIR + "other.json";
@@ -870,12 +879,14 @@ public class PotionConfigMod implements ModInitializer {
 	"wandering_trader_night": "invisibility",
 	"milk": {
 		"cow": "potion-config:beer",
-		"skeleton": "potion-config:milk"
+		"skeleton": "potion-config:lemonade"
 	},
 	"fuel": {
 		"minecraft:blaze_powder": 20,
 		"lapis_lazuli": 10
-	}
+	},
+	"milk_bucket": "potion-config:beer",
+	"honey_bottle": "potion-config:lemonade"
 }
 """;
 }

@@ -1,13 +1,10 @@
 package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.FuelSlot;
-import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.BrewingStandScreenHandler;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;

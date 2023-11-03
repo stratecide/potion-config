@@ -40,10 +40,10 @@ Those can't be replaced as easily, so I recommend defining the following potions
 ## future plans
 
 - remove lingering potion -> tipped arrow recipes from REI (KubeJS?)
-
+- add EXP effect to handle Experience Bottles
+- handle Dragon's Breath and Experience Bottles
 - replace tipped arrows from fletching villager (gift and trade)
 - add StatusEffect that causes another whenever some trigger (onGrounded, inWater, ...) occurs
-- add InstantEffect that removes the specified StatusEffect. Problem: how to specify which one to remove?
 - reduce error messages in console
 - show unstable potions in REI brewing
 - don't show each brewing recipe 3 times in REI
