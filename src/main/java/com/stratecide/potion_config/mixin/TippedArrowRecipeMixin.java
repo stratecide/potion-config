@@ -27,7 +27,7 @@ public abstract class TippedArrowRecipeMixin {
         return false;
     }
 
-    @Redirect(method = "craft(Lnet/minecraft/inventory/CraftingInventory;)Lnet/minecraft/item/ItemStack;", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"))
+    @Redirect(method = "craft(Lnet/minecraft/inventory/RecipeInputInventory;Lnet/minecraft/registry/DynamicRegistryManager;)Lnet/minecraft/item/ItemStack;", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"))
     boolean injectCraft(ItemStack itemStack, Item lingeringPotionItem) {
         if (itemStack.isOf(PotionConfigMod.CRAFTING_POTION)) {
             Potion vanillaPotion = PotionUtil.getPotion(itemStack);
