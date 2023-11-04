@@ -73,7 +73,7 @@ public class PotionConfigMod implements ModInitializer {
 		return CustomPotion.empty(identifier);
 	}
 
-	public static final CraftingPotion CRAFTING_POTION = Registry.register(Registry.ITEM, new Identifier(MOD_ID, "crafting_potion"), new CraftingPotion());
+	public static final CraftingPotion CRAFTING_POTION = new CraftingPotion();
 	public static final List<CustomPotion> ARROW_POTIONS = new ArrayList<>();
 
 	public static final Map<Potion, FloorBlock> FLOOR_BLOCKS = new HashMap<>();
@@ -115,6 +115,7 @@ public class PotionConfigMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		StatusEffect test = CustomStatusEffect.MILK;
+		Registry.register(Registry.ITEM, new Identifier(MOD_ID, "crafting_potion"), CRAFTING_POTION);
 		loadConfigPotions();
 		loadConfigRecipes();
 		loadConfigOther();
@@ -471,15 +472,15 @@ public class PotionConfigMod implements ModInitializer {
 
 	"haste": {
 		"replaces": "minecraft:leaping",
-		"color": "D9C043",
+		"color": "EECC11",
 		"duration": 40,
 		"minecraft:mining_fatigue": {},
-		"potion-config:particles": { "color": "D9C043" },
+		"potion-config:particles": { "color": "EECC11" },
 		"after": {
 			"duration": 3600,
 			"minecraft:haste": { "amplifier": 1 },
 			"potion-config:finesse": {},
-			"potion-config:particles": { "color": "D9C043" }
+			"potion-config:particles": { "color": "EECC11" }
 		}
 	},
 	"dolphins_grace": {
@@ -643,17 +644,48 @@ public class PotionConfigMod implements ModInitializer {
 	private static final String DEFAULT_RECIPES = """
 {
 	"water": {
-		"#minecraft:leaves": "mundane",
-		"minecraft:nether_wart": "awkward",
-		"minecraft:sugar": "lemonade",
-		"minecraft:wheat": "beer"
+		"#minecraft:leaves": {
+			"mundane": 6,
+			"awkward": 2,
+			"thick": 1
+		},
+		"minecraft:rotten_flesh": "mundane",
+		"minecraft:glow_berries": "awkward",
+		"minecraft:nether_wart": "thick",
+		"minecraft:fermented_spider_eye": "weakness",
+		"minecraft:sugar": "lemonade"
+	},
+	"mundane": {
+		"minecraft:wheat": "beer",
+		"#c:dyes": "rainbow",
+		"minecraft:spider_eye": "poison"
+	},
+	"beer": {
+		"minecraft:apple": "cider"
 	},
 	"awkward": {
-		"minecraft:phantom_membrane": {
-			"slow_falling": 3,
-			"floating": 2,
-			"creative_flight": 1
-		}
+		"minecraft:cobweb": "paralysis",
+		"glistering_melon_slice": "strong_healing",
+		"ghast_tear": "strong_regeneration",
+		"pufferfish": "water_breathing",
+		"magma_cream": "fire_resistance",
+		"scute": "strength",
+		"cactus": "harming",
+		"golden_carrot": "night_vision",
+		"fermented_spider_eye": "invisibility",
+		"phantom_membrane": "slow_falling",
+		"blaze_powder": "haste",
+		"chorus_fruit": "gambling"
+	},
+	"thick": {
+		"minecraft:phantom_membrane": "gliding",
+		"minecraft:rabbit_foot": "jump_pad",
+		"minecraft:sugar": "boost_pad",
+		"minecraft:tropical_fish": "dolphins_grace",
+		"minecraft:beetroot_seeds": "slowness"
+	},
+	"gliding": {
+		"minecraft:firework_rocket": "elytra_boost"
 	}
 }""";
 

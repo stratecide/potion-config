@@ -1,13 +1,23 @@
 package com.stratecide.potion_config.effects;
 
+import com.google.common.collect.Lists;
+import com.stratecide.potion_config.CustomEffect;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.registry.Registry;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RemoveEffect extends CustomStatusEffect {
@@ -51,5 +61,12 @@ public class RemoveEffect extends CustomStatusEffect {
         if (!entity.world.isClient) {
             entity.removeStatusEffect(removedEffect);
         }
+    }
+
+    @Override
+    public boolean buildToolTip(List<Text> list, double chance, int duration, int strength, boolean isPermanent) {
+        Text statusEffect = Text.translatable(this.removedEffect.getTranslationKey());
+        list.add(Text.translatable("effect.potion-config.remove_effect", statusEffect).formatted(getCategory().getFormatting()));
+        return true;
     }
 }
