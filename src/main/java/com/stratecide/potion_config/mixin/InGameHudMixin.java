@@ -1,6 +1,7 @@
 package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.effects.CustomStatusEffect;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -20,12 +21,12 @@ public abstract class InGameHudMixin {
 
     @Shadow private int scaledHeight;
 
-    @Shadow protected abstract void renderHotbarItem(int x, int y, float tickDelta, PlayerEntity player, ItemStack stack, int seed);
+    @Shadow protected abstract void renderHotbarItem(DrawContext context, int x, int y, float f, PlayerEntity player, ItemStack stack, int seed);
 
     @Shadow protected abstract PlayerEntity getCameraPlayer();
 
     @Inject(method = "renderHotbar", at = @At("TAIL"))
-    private void injectElytraAmplifierIcon(float tickDelta, MatrixStack matrices, CallbackInfo ci) {
+    private void injectElytraAmplifierIcon(float tickDelta, DrawContext context, CallbackInfo ci) {
         PlayerEntity playerEntity = getCameraPlayer();
         if (playerEntity == null) {
             return;
@@ -37,7 +38,7 @@ public abstract class InGameHudMixin {
             int y = scaledHeight - 16 - 3;
             ItemStack itemStack = new ItemStack(Items.FIREWORK_ROCKET);
             itemStack.setCount(elytraEffect.getAmplifier());
-            renderHotbarItem(x, y, tickDelta, playerEntity, itemStack, 127);
+            renderHotbarItem(context, x, y, tickDelta, playerEntity, itemStack, 127);
         }
     }
 }

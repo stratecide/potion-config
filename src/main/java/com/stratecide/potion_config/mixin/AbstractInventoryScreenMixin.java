@@ -2,6 +2,7 @@ package com.stratecide.potion_config.mixin;
 
 import com.stratecide.potion_config.PotionConfigMod;
 import com.stratecide.potion_config.effects.AfterEffect;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @Mixin(AbstractInventoryScreen.class)
 public class AbstractInventoryScreenMixin {
     @Inject(method = "drawStatusEffects", at = @At("HEAD"))
-    private void hideAfterEffects(MatrixStack matrices, int mouseX, int mouseY, CallbackInfo ci) {
+    private void hideAfterEffects(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
         PotionConfigMod.HIDE_AFTER_EFFECTS_DISPLAY = true;
     }
 

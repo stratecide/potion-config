@@ -59,15 +59,21 @@ public class FloorBlockModel implements UnbakedModel, BakedModel, FabricBakedMod
     }
 
     @Override
-    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
-        return List.of(SPRITE_IDS[0], SPRITE_IDS[1], SPRITE_IDS[1], DEFAULT_SPRITE_IDS[0], DEFAULT_SPRITE_IDS[1], DEFAULT_SPRITE_IDS[2]);
+    public void setParents(Function<Identifier, UnbakedModel> modelLoader) {
+
     }
 
+    /*@Override
+    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
+        return List.of(SPRITE_IDS[0], SPRITE_IDS[1], SPRITE_IDS[1], DEFAULT_SPRITE_IDS[0], DEFAULT_SPRITE_IDS[1], DEFAULT_SPRITE_IDS[2]);
+    }*/
+
+    @Nullable
     @Override
-    public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
+    public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
         for (int i = 0; i < SPRITE_IDS.length; i++) {
             SPRITES[i] = textureGetter.apply(SPRITE_IDS[i]);
-            if (SPRITES[i] instanceof MissingSprite) {
+            if (SPRITES[i].getContents().getId().equals(MissingSprite.getMissingSpriteId())) {
                 if (DEFAULT_SPRITES[i] == null)
                     DEFAULT_SPRITES[i] = textureGetter.apply(DEFAULT_SPRITE_IDS[i]);
                 SPRITES[i] = DEFAULT_SPRITES[i];

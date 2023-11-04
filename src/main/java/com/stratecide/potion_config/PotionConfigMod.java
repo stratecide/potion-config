@@ -13,6 +13,7 @@ import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.mixin.BrewingRecipeRegistryAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -25,7 +26,8 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.recipe.*;
-import net.minecraft.tag.TagKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +50,13 @@ public class PotionConfigMod implements ModInitializer {
 		Identifier identifier = CUSTOM_IDS.get(key);
 		if (identifier == null)
 			identifier = new Identifier(key);
-		if (!Registry.POTION.containsId(identifier) && !key.contains(":"))
+		if (!Registries.POTION.containsId(identifier) && !key.contains(":"))
 			identifier = new Identifier(MOD_ID, key);
 		return identifier;
 	}
 
 	public static String getPotionKey(Potion potion) {
-		Identifier identifier = Registry.POTION.getId(potion);
+		Identifier identifier = Registries.POTION.getId(potion);
 		for (Map.Entry<String, Identifier> entry : CUSTOM_IDS.entrySet()) {
 			if (entry.getValue().equals(identifier))
 				return entry.getKey();
@@ -70,7 +72,7 @@ public class PotionConfigMod implements ModInitializer {
 		CustomPotion result = CUSTOM_POTIONS.get(vanillaPotion);
 		if (result != null)
 			return result;
-		Identifier identifier = Registry.POTION.getId(vanillaPotion);
+		Identifier identifier = Registries.POTION.getId(vanillaPotion);
 		//LOGGER.warn("Attempted to get custom potion '" + identifier + "' but it doesn't exist!");
 		return CustomPotion.empty(identifier);
 	}
@@ -116,7 +118,7 @@ public class PotionConfigMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		StatusEffect test = CustomStatusEffect.MILK;
-		Registry.register(Registry.ITEM, new Identifier(MOD_ID, "crafting_potion"), CRAFTING_POTION);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "crafting_potion"), CRAFTING_POTION);
 		loadConfigPotions();
 		loadConfigRecipes();
 		loadConfigOther();
@@ -227,7 +229,7 @@ public class PotionConfigMod implements ModInitializer {
 			Identifier potionId;
 			if (json.has("replaces")) {
 				potionId = new Identifier(json.get("replaces").getAsString());
-				if (!Registry.POTION.containsId(potionId)) {
+				if (!Registries.POTION.containsId(potionId)) {
 					LOGGER.warn("Missing potion " + potionId + ": can't be replaced by " + id);
 					continue;
 				}
@@ -235,17 +237,17 @@ public class PotionConfigMod implements ModInitializer {
 				CUSTOM_IDS_REVERSE.put(potionId, id);
 			} else {
 				potionId = new Identifier(id);
-				if (!Registry.POTION.containsId(potionId)) {
+				if (!Registries.POTION.containsId(potionId)) {
 					if (!id.contains(":")) {
 						potionId = new Identifier(MOD_ID, id);
-						Registry.register(Registry.POTION, potionId, new Potion());
+						Registry.register(Registries.POTION, potionId, new Potion());
 					} else {
 						LOGGER.warn("Missing potion " + id + ": If you want to create custom potions, they should have no namespace");
 						continue;
 					}
 				}
 			}
-			Potion vanillaPotion = Registry.POTION.get(potionId);
+			Potion vanillaPotion = Registries.POTION.get(potionId);
 			CustomPotion customPotion = CustomPotion.parse(potionId, json);
 			CUSTOM_POTIONS.put(vanillaPotion, customPotion);
 			if (customPotion.type == PotionType.CraftIngredient) {
@@ -288,8 +290,9 @@ public class PotionConfigMod implements ModInitializer {
 		Identifier blockId = new Identifier(MOD_ID, "floor_" + id);
 		FloorBlock block = new FloorBlock(ParticleTypes.AMBIENT_ENTITY_EFFECT, customPotion);
 		FLOOR_BLOCKS.put(vanillaPotion, block);
-		Registry.register(Registry.BLOCK, blockId, block);
-		Registry.register(Registry.ITEM, blockId, new BlockItem(block, new FabricItemSettings().group(ItemGroup.BREWING)));
+		Registry.register(Registries.BLOCK, blockId, block);
+		Item item = Registry.register(Registries.ITEM, blockId, new BlockItem(block, new FabricItemSettings()));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(content -> content.add(item));
 		if (recipeIngredient != null && recipeOutput > 0) {
 			FLOOR_BLOCK_RECIPES.put(vanillaPotion, new FloorBlockRecipeContainer(ingredientFromString(recipeIngredient), recipeOutput));
 		}
@@ -298,8 +301,9 @@ public class PotionConfigMod implements ModInitializer {
 		Identifier blockId = new Identifier(MOD_ID, "portal_" + id);
 		PortalBlock block = new PortalBlock(ParticleTypes.AMBIENT_ENTITY_EFFECT, customPotion);
 		PORTAL_BLOCKS.put(vanillaPotion, block);
-		Registry.register(Registry.BLOCK, blockId, block);
-		Registry.register(Registry.ITEM, blockId, new BlockItem(block, new FabricItemSettings().group(ItemGroup.BREWING)));
+		Registry.register(Registries.BLOCK, blockId, block);
+		Item item = Registry.register(Registries.ITEM, blockId, new BlockItem(block, new FabricItemSettings()));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(content -> content.add(item));
 		if (recipeIngredient != null && recipeOutput > 0) {
 			PORTAL_BLOCK_RECIPES.put(vanillaPotion, new PortalBlockRecipeContainer(ingredientFromString(recipeIngredient), recipeOutput));
 		}
@@ -594,7 +598,7 @@ public class PotionConfigMod implements ModInitializer {
 	private void loadConfigRecipes() {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_RECIPES, DEFAULT_RECIPES).getAsJsonObject();
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-			Potion input = Registry.POTION.get(getPotionIdentifier(entry.getKey()));
+			Potion input = Registries.POTION.get(getPotionIdentifier(entry.getKey()));
 			if (input == Potions.EMPTY) {
 				LOGGER.warn("skipped recipe for unknown potion " + entry.getKey());
 				continue;
@@ -607,17 +611,17 @@ public class PotionConfigMod implements ModInitializer {
 					for (Map.Entry<String, JsonElement> outputEntry : ingredientEntry.getValue().getAsJsonObject().entrySet()) {
 						int chance = outputEntry.getValue().getAsInt();
 						if (chance > 0) {
-							outputs.put(Registry.POTION.get(getPotionIdentifier(outputEntry.getKey())), chance);
+							outputs.put(Registries.POTION.get(getPotionIdentifier(outputEntry.getKey())), chance);
 						}
 					}
 				} else {
-					outputs.put(Registry.POTION.get(getPotionIdentifier(ingredientEntry.getValue().getAsString())), 1);
+					outputs.put(Registries.POTION.get(getPotionIdentifier(ingredientEntry.getValue().getAsString())), 1);
 				}
 				if (outputs.size() == 1) {
 					for (Potion output : outputs.keySet())
 						BrewingRecipeRegistryAccessor.getRecipes().add(new BrewingRecipeRegistry.Recipe(input, ingredient, output));
 				} else if (outputs.size() > 1) {
-					Potion unstable = Registry.register(Registry.POTION, new Identifier(MOD_ID, "unstable_" + NEXT_UNSTABLE_ID), new Potion());
+					Potion unstable = Registry.register(Registries.POTION, new Identifier(MOD_ID, "unstable_" + NEXT_UNSTABLE_ID), new Potion());
 					NEXT_UNSTABLE_ID += 1;
 					UNSTABLE_POTIONS.put(unstable, outputs);
 					BrewingRecipeRegistryAccessor.getRecipes().add(new BrewingRecipeRegistry.Recipe(input, ingredient, unstable));
@@ -628,9 +632,9 @@ public class PotionConfigMod implements ModInitializer {
 
 	private static Ingredient ingredientFromString(String ingredientId) {
 		if (ingredientId.startsWith("#")) {
-			return Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, new Identifier(ingredientId.substring(1))));
+			return Ingredient.fromTag(TagKey.of(RegistryKeys.ITEM, new Identifier(ingredientId.substring(1))));
 		} else {
-			Item item = Registry.ITEM.get(new Identifier(ingredientId));
+			Item item = Registries.ITEM.get(new Identifier(ingredientId));
 			if (item == Items.AIR)
 				throw new AssertionError("Invalid ingredient identifier : " + ingredientId);
 			return Ingredient.ofItems(item);
@@ -690,20 +694,20 @@ public class PotionConfigMod implements ModInitializer {
 		JsonObject jsonObject = loadConfig(CONFIG_FILE_OTHER, DEFAULT_OTHER).getAsJsonObject();
 		if (jsonObject.has("witch")) {
 			for (Entry<String, JsonElement> entry : jsonObject.get("witch").getAsJsonObject().entrySet()) {
-				WITCH_POTIONS.put(entry.getKey(), Registry.POTION.get(getPotionIdentifier(entry.getValue().getAsString())));
+				WITCH_POTIONS.put(entry.getKey(), Registries.POTION.get(getPotionIdentifier(entry.getValue().getAsString())));
 			}
 		}
 		if (jsonObject.has("wandering_trader_night")) {
-			WANDERING_TRADER_POTION = Registry.POTION.get(getPotionIdentifier(jsonObject.get("wandering_trader_night").getAsString()));
+			WANDERING_TRADER_POTION = Registries.POTION.get(getPotionIdentifier(jsonObject.get("wandering_trader_night").getAsString()));
 		}
 		for (Map.Entry<String, JsonElement> entry : jsonObject.get("milk").getAsJsonObject().entrySet()) {
 			Identifier entityId = new Identifier(entry.getKey());
-			EntityType entityType = Registry.ENTITY_TYPE.get(entityId);
-			if (entityType == EntityType.PIG && !entityId.equals(Registry.ENTITY_TYPE.getId(EntityType.PIG))) {
+			EntityType entityType = Registries.ENTITY_TYPE.get(entityId);
+			if (entityType == EntityType.PIG && !entityId.equals(Registries.ENTITY_TYPE.getId(EntityType.PIG))) {
 				LOGGER.warn("Mob " + entityId + " doesn't exist. (milk)");
 				continue;
 			}
-			Potion potion = Registry.POTION.get(getPotionIdentifier(entry.getValue().getAsString()));
+			Potion potion = Registries.POTION.get(getPotionIdentifier(entry.getValue().getAsString()));
 			if (potion == Potions.EMPTY) {
 				LOGGER.warn("Potion " + entry.getValue() + " doesn't exist. (milk)");
 				continue;
@@ -720,7 +724,7 @@ public class PotionConfigMod implements ModInitializer {
 		}
 		if (jsonObject.has("milk_bucket")) {
 			Identifier identifier = new Identifier(jsonObject.get("milk_bucket").getAsString());
-			Potion potion = Registry.POTION.get(identifier);
+			Potion potion = Registries.POTION.get(identifier);
 			if (!CUSTOM_POTIONS.containsKey(potion)) {
 				throw new RuntimeException("MilkBucket potion " + identifier + " doesn't exist!");
 			}
@@ -728,7 +732,7 @@ public class PotionConfigMod implements ModInitializer {
 		}
 		if (jsonObject.has("honey_bottle")) {
 			Identifier identifier = new Identifier(jsonObject.get("honey_bottle").getAsString());
-			Potion potion = Registry.POTION.get(identifier);
+			Potion potion = Registries.POTION.get(identifier);
 			if (!CUSTOM_POTIONS.containsKey(potion)) {
 				throw new RuntimeException("HoneyBottle potion " + identifier + " doesn't exist!");
 			}

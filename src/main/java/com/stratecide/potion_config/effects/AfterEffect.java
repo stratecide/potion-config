@@ -6,9 +6,9 @@ import com.stratecide.potion_config.*;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.potion.Potion;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +41,8 @@ public class AfterEffect extends CustomStatusEffect {
                     break;
                 default:
                     Identifier identifier = new Identifier(key);
-                    if (Registry.STATUS_EFFECT.containsId(identifier)) {
-                        StatusEffect effect = Registry.STATUS_EFFECT.get(identifier);
+                    if (Registries.STATUS_EFFECT.containsId(identifier)) {
+                        StatusEffect effect = Registries.STATUS_EFFECT.get(identifier);
                         effects.add(new CustomEffect(effect, value.getAsJsonObject()));
                     } else {
                         throw new RuntimeException("Unknown status effect " + identifier);
@@ -54,7 +54,7 @@ public class AfterEffect extends CustomStatusEffect {
             throw new RuntimeException("Missing duration for after-effect " + identifier);
         }
         NEXT_ID += 1;
-        Registry.register(Registry.STATUS_EFFECT, identifier, new AfterEffect(duration, effects));
+        Registry.register(Registries.STATUS_EFFECT, identifier, new AfterEffect(duration, effects));
         return identifier;
     }
 

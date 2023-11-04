@@ -56,8 +56,8 @@ public class CustomEffect {
             effect = ((AllOrNone) effect).withChildren(effects);
         } else if (effect instanceof RemoveEffect) {
             Identifier identifier = new Identifier(jsonObject.get("effect").getAsString());
-            StatusEffect statusEffect = Registry.STATUS_EFFECT.get(identifier);
-            if (statusEffect == StatusEffects.LUCK && !identifier.equals(Registry.STATUS_EFFECT.getId(StatusEffects.LUCK)))
+            StatusEffect statusEffect = Registries.STATUS_EFFECT.get(identifier);
+            if (statusEffect == StatusEffects.LUCK && !identifier.equals(Registries.STATUS_EFFECT.getId(StatusEffects.LUCK)))
                 throw new RuntimeException("Unknown status effect " + identifier);
             effect = RemoveEffect.getOrCreate(statusEffect);
         }
@@ -92,7 +92,7 @@ public class CustomEffect {
             }
         }
         if (strength > 10) {
-            mutableText = Text.translatable("potion.withAmplifier", mutableText, "" + strength);
+            mutableText = Text.translatable("potion.withAmplifier", mutableText, String.valueOf(strength));
         } else if (strength > 1) {
             mutableText = Text.translatable("potion.withAmplifier", mutableText, Text.translatable("enchantment.level." + strength));
         }

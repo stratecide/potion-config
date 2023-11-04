@@ -2,18 +2,21 @@ package com.stratecide.potion_config.blocks.floor;
 
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.SpecialCraftingRecipe;
+import net.minecraft.recipe.book.CraftingRecipeCategory;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 public class FloorBlockRecipe extends SpecialCraftingRecipe {
 
-    public FloorBlockRecipe(Identifier identifier) {
-        super(identifier);
+    public FloorBlockRecipe(Identifier identifier, CraftingRecipeCategory category) {
+        super(identifier, category);
     }
 
     private FloorBlockRecipeContainer getMeta(Potion potion) {
@@ -21,7 +24,7 @@ public class FloorBlockRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public boolean matches(CraftingInventory craftingInventory, World world) {
+    public boolean matches(RecipeInputInventory craftingInventory, World world) {
         if (craftingInventory.getWidth() != 3 || craftingInventory.getHeight() != 3) {
             return false;
         }
@@ -46,7 +49,7 @@ public class FloorBlockRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public ItemStack craft(CraftingInventory craftingInventory) {
+    public ItemStack craft(RecipeInputInventory craftingInventory, DynamicRegistryManager registryManager) {
         ItemStack itemStack = craftingInventory.getStack(4);
         Potion potion = PotionUtil.getPotion(itemStack);
         if (!itemStack.isOf(PotionConfigMod.CRAFTING_POTION) || !PotionConfigMod.FLOOR_BLOCK_RECIPES.containsKey(potion)) {

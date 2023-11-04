@@ -54,7 +54,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void updateColor(CallbackInfo ci) {
-        if (this.world.isClient || colorSet || this.potion == Potions.EMPTY) {
+        if (this.getWorld().isClient || colorSet || this.potion == Potions.EMPTY) {
             return;
         }
         CustomPotion potion = PotionConfigMod.getCustomPotion(this.potion);
@@ -74,7 +74,7 @@ public abstract class ArrowEntityMixin extends PersistentProjectileEntity {
         if (this.potion != Potions.EMPTY) {
             for (StatusEffectInstance statusEffectInstance : PotionConfigMod.getCustomPotion(this.potion).generateEffectInstances()) {
                 if (statusEffectInstance.getEffectType().isInstant()) {
-                    statusEffectInstance.getEffectType().applyInstantEffect(getEventSource(), getEffectCause(), target, statusEffectInstance.getAmplifier(), 1.0);
+                    statusEffectInstance.getEffectType().applyInstantEffect(this, getEffectCause(), target, statusEffectInstance.getAmplifier(), 1.0);
                 } else {
                     target.addStatusEffect(statusEffectInstance, this.getEffectCause());
                 }

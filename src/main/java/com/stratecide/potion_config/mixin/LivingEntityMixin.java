@@ -11,12 +11,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -120,7 +120,7 @@ public abstract class LivingEntityMixin extends Entity {
     @Inject(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isInsideWall()Z"))
     private void handlePotionBlocks(CallbackInfo ci) {
         if (!this.isSpectator()) {
-            BlockState state = this.world.getBlockState(this.getVelocityAffectingPos());
+            BlockState state = this.getWorld().getBlockState(this.getVelocityAffectingPos());
             if (state.getBlock() instanceof FloorBlock) {
                 FloorBlock block = (FloorBlock) state.getBlock();
                 for (StatusEffectInstance statusEffectInstance : block.getPotion().generateEffectInstances()) {
@@ -137,7 +137,7 @@ public abstract class LivingEntityMixin extends Entity {
     @Inject(method = "tickFallFlying", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"), cancellable = true)
     private void injectElytraEffect(CallbackInfo ci) {
         if (hasStatusEffect(CustomStatusEffect.ELYTRA)) {
-            if (!this.world.isClient && (getRoll() + 1) % 10 == 0) {
+            if (!this.getWorld().isClient && (getRoll() + 1) % 10 == 0) {
                 this.emitGameEvent(GameEvent.ELYTRA_GLIDE);
             }
             ci.cancel();
@@ -146,7 +146,7 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Inject(method = "handleFallDamage", at = @At("HEAD"), cancellable = true)
     private void injectNoFallDamageEffect(float fallDistance, float damageMultiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
-        if (fallDistance > 0.f && damageSource == DamageSource.FALL && hasStatusEffect(CustomStatusEffect.NO_FALL_DAMAGE)) {
+        if (fallDistance > 0.f && DamageTypes.FALL.equals(damageSource.getType()) && hasStatusEffect(CustomStatusEffect.NO_FALL_DAMAGE)) {
             cir.setReturnValue(handleFallDamage(0.f, damageMultiplier, damageSource));
         }
     }

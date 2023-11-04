@@ -53,14 +53,19 @@ public class PortalBlockModel implements UnbakedModel, BakedModel, FabricBakedMo
     }
 
     @Override
-    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
-        return List.of(SPRITE_ID, DEFAULT_SPRITE_ID);
+    public void setParents(Function<Identifier, UnbakedModel> modelLoader) {
+
     }
 
+    /*@Override
+    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences) {
+        return List.of(SPRITE_ID, DEFAULT_SPRITE_ID);
+    }*/
+
     @Override
-    public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
+    public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
         SPRITE = textureGetter.apply(SPRITE_ID);
-        if (SPRITE instanceof MissingSprite) {
+        if (SPRITE.getContents().getId().equals(MissingSprite.getMissingSpriteId())) {
             if (DEFAULT_SPRITE == null)
                 DEFAULT_SPRITE = textureGetter.apply(DEFAULT_SPRITE_ID);
             SPRITE = DEFAULT_SPRITE;

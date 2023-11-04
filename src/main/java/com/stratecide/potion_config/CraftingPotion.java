@@ -12,7 +12,7 @@ import net.minecraft.world.World;
 public class CraftingPotion extends PotionItem {
 
     public CraftingPotion() {
-        super(new FabricItemSettings().maxCount(64).group(ItemGroup.BREWING));
+        super(new FabricItemSettings().maxCount(64));
     }
 
     @Override

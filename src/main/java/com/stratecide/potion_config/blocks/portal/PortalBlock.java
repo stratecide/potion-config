@@ -15,9 +15,11 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
+import net.minecraft.registry.Registries;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -26,7 +28,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -46,7 +47,7 @@ public class PortalBlock extends PillarBlock {
     protected final CustomPotion potion;
 
     public PortalBlock(ParticleEffect particle, CustomPotion potion) {
-        super(FabricBlockSettings.of(Material.GLASS).nonOpaque().noCollision().strength(1.0f).sounds(BlockSoundGroup.GLASS));
+        super(FabricBlockSettings.create().nonOpaque().noCollision().strength(1.0f).sounds(BlockSoundGroup.GLASS));
         this.particle = particle;
         this.potion = potion;
         this.setDefaultState(this.stateManager.getDefaultState().with(AXIS, Direction.Axis.X).with(WATERLOGGED, false));
@@ -102,7 +103,7 @@ public class PortalBlock extends PillarBlock {
     @Override
     public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
         if (state.get(WATERLOGGED).booleanValue()) {
-            world.createAndScheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+            world.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
         }
         return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
@@ -121,16 +122,16 @@ public class PortalBlock extends PillarBlock {
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         if (PotionConfigMod.BLOCKS_DROP_SELF)
-            return List.of(new ItemStack(Registry.ITEM.get(Registry.BLOCK.getId(this))));
+            return List.of(new ItemStack(Registries.ITEM.get(Registries.BLOCK.getId(this))));
         return super.getDroppedStacks(state, builder);
     }
 
     @Override
     public void appendTooltip(ItemStack stack, @Nullable BlockView world, List<Text> tooltip, TooltipContext context) {
         super.appendTooltip(stack, world, tooltip, context);
-        Potion potion = Registry.POTION.get(this.potion.potionId);
+        Potion potion = Registries.POTION.get(this.potion.potionId);
         ItemStack itemStack = new ItemStack(PotionConfigMod.CRAFTING_POTION);
         PotionUtil.setPotion(itemStack, potion);
         PotionUtil.buildTooltip(itemStack, tooltip, 1.0f);

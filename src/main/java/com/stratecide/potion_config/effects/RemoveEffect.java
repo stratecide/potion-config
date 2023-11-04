@@ -1,21 +1,14 @@
 package com.stratecide.potion_config.effects;
 
-import com.google.common.collect.Lists;
-import com.stratecide.potion_config.CustomEffect;
 import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.text.MutableText;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import net.minecraft.util.registry.Registry;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +38,7 @@ public class RemoveEffect extends CustomStatusEffect {
         RemoveEffect result = CREATED.get(removedEffect);
         if (result == null) {
             int id = CREATED.size();
-            result = Registry.register(Registry.STATUS_EFFECT, generateIdentifier(id), new RemoveEffect(removedEffect));
+            result = Registry.register(Registries.STATUS_EFFECT, generateIdentifier(id), new RemoveEffect(removedEffect));
             CREATED.put(removedEffect, result);
         }
         return result;
@@ -58,7 +51,7 @@ public class RemoveEffect extends CustomStatusEffect {
 
     @Override
     public void applyUpdateEffect(LivingEntity entity, int amplifier) {
-        if (!entity.world.isClient) {
+        if (!entity.getWorld().isClient) {
             entity.removeStatusEffect(removedEffect);
         }
     }

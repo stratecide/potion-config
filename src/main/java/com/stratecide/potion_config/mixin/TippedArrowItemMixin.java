@@ -5,16 +5,13 @@ import com.stratecide.potion_config.PotionConfigMod;
 import net.minecraft.item.*;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
-import net.minecraft.potion.Potions;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.registry.Registry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.Map;
 
 @Mixin(TippedArrowItem.class)
 public abstract class TippedArrowItemMixin extends Item {
@@ -30,11 +27,11 @@ public abstract class TippedArrowItemMixin extends Item {
         cir.setReturnValue(this.getTranslationKey() + ".effect." + key);
     }
 
-    @Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)
     void removeFromCreativeInventory(ItemGroup group, DefaultedList<ItemStack> stacks, CallbackInfo ci) {
         for (CustomPotion potion : PotionConfigMod.ARROW_POTIONS) {
-            stacks.add(PotionUtil.setPotion(new ItemStack(this), Registry.POTION.get(potion.potionId)));
+            stacks.add(PotionUtil.setPotion(new ItemStack(this), Registries.POTION.get(potion.potionId)));
         }
         ci.cancel();
-    }
+    }*/
 }

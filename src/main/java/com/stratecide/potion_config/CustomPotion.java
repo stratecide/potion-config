@@ -18,7 +18,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -168,13 +167,13 @@ public class CustomPotion {
                 list.add(ScreenTexts.EMPTY);
                 list.add(Text.translatable("potion.whenDrank").formatted(Formatting.DARK_PURPLE));
                 for (Pair pair : attributeModifiers) {
-                    EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)pair.getSecond();
+                    EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)pair.getRight();
                     double d = entityAttributeModifier.getValue();
                     double e = entityAttributeModifier.getOperation() == EntityAttributeModifier.Operation.MULTIPLY_BASE || entityAttributeModifier.getOperation() == EntityAttributeModifier.Operation.MULTIPLY_TOTAL ? entityAttributeModifier.getValue() * 100.0 : entityAttributeModifier.getValue();
                     if (d > 0.0) {
-                        list.add(Text.translatable("attribute.modifier.plus." + entityAttributeModifier.getOperation().getId(), ItemStack.MODIFIER_FORMAT.format(e), Text.translatable(((EntityAttribute)pair.getFirst()).getTranslationKey())).formatted(Formatting.BLUE));
+                        list.add(Text.translatable("attribute.modifier.plus." + entityAttributeModifier.getOperation().getId(), ItemStack.MODIFIER_FORMAT.format(e), Text.translatable(((EntityAttribute)pair.getLeft()).getTranslationKey())).formatted(Formatting.BLUE));
                     } else if (d < 0.0) {
-                        list.add(Text.translatable("attribute.modifier.take." + entityAttributeModifier.getOperation().getId(), ItemStack.MODIFIER_FORMAT.format(e *= -1.0), Text.translatable(((EntityAttribute) pair.getFirst()).getTranslationKey())).formatted(Formatting.RED));
+                        list.add(Text.translatable("attribute.modifier.take." + entityAttributeModifier.getOperation().getId(), ItemStack.MODIFIER_FORMAT.format(e *= -1.0), Text.translatable(((EntityAttribute) pair.getLeft()).getTranslationKey())).formatted(Formatting.RED));
                     }
                 }
             }

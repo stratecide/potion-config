@@ -41,7 +41,7 @@ public abstract class PotionItemMixin extends Item {
         return false;
     }
 
-    @Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "appendStacks", at = @At("HEAD"), cancellable = true)
     void onlyAddCorrectTypeCombinations(ItemGroup group, DefaultedList<ItemStack> stacks, CallbackInfo ci) {
         if (this.isIn(group)) {
             for (CustomPotion potion : PotionConfigMod.CUSTOM_POTIONS.values()) {
@@ -53,5 +53,5 @@ public abstract class PotionItemMixin extends Item {
             }
             ci.cancel();
         }
-    }
+    }*/
 }

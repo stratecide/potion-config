@@ -10,7 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.tag.FluidTags;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -32,7 +32,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             int count = 0;
             if (this.isSubmergedIn(FluidTags.WATER) && !EnchantmentHelper.hasAquaAffinity(this))
                 count += 1;
-            if (!this.onGround)
+            if (!this.isOnGround())
                 count += 1;
             double result = cir.getReturnValue();
             for (int i = 0; i < count; i++) {
@@ -55,13 +55,16 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Inject(method = "checkFallFlying", at = @At("HEAD"), cancellable = true)
     private void injectElytraEffectRockets(CallbackInfoReturnable<Boolean> cir) {
         if (this.isFallFlying() && getStatusEffect(CustomStatusEffect.ELYTRA).getAmplifier() > 0) {
-            if (!world.isClient) {
+            if (!getWorld().isClient) {
                 ItemStack itemStack = new ItemStack(Items.FIREWORK_ROCKET);
-                FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(world, itemStack, this);
-                world.spawnEntity(fireworkRocketEntity);
+                FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(getWorld(), itemStack, this);
+                getWorld().spawnEntity(fireworkRocketEntity);
             }
             StatusEffectInstance oldInstance = getStatusEffect(CustomStatusEffect.ELYTRA);
             StatusEffectInstance instance = new StatusEffectInstance(CustomStatusEffect.ELYTRA, oldInstance.getDuration(), oldInstance.getAmplifier() - 1, oldInstance.isAmbient(), oldInstance.shouldShowParticles(), oldInstance.shouldShowIcon());
+            if (oldInstance.hiddenEffect != null) {
+                instance.upgrade(oldInstance.hiddenEffect);
+            }
             setStatusEffect(instance, this);
             cir.setReturnValue(true);
         }

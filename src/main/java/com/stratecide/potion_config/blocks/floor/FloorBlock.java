@@ -9,14 +9,15 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -51,16 +52,16 @@ public class FloorBlock extends Block {
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         if (PotionConfigMod.BLOCKS_DROP_SELF)
-            return List.of(new ItemStack(Registry.ITEM.get(Registry.BLOCK.getId(this))));
+            return List.of(new ItemStack(Registries.ITEM.get(Registries.BLOCK.getId(this))));
         return super.getDroppedStacks(state, builder);
     }
 
     @Override
     public void appendTooltip(ItemStack stack, @Nullable BlockView world, List<Text> tooltip, TooltipContext context) {
         super.appendTooltip(stack, world, tooltip, context);
-        Potion potion = Registry.POTION.get(getPotion().potionId);
+        Potion potion = Registries.POTION.get(getPotion().potionId);
         ItemStack itemStack = new ItemStack(PotionConfigMod.CRAFTING_POTION);
         PotionUtil.setPotion(itemStack, potion);
         PotionUtil.buildTooltip(itemStack, tooltip, 1.0f);
