@@ -124,7 +124,7 @@ public class PotionConfigMod implements ModInitializer {
 	private static JsonElement loadConfig(String filename, String defaultContent) {
 		File file = new File(filename);
 		String data;
-		if (true || !file.exists()) {
+		if (!file.exists()) {
 			file.getParentFile().mkdirs();
 			data = defaultContent;
 			try (FileWriter writer = new FileWriter(filename)) {
