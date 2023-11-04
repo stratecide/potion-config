@@ -66,6 +66,10 @@ public class CustomStatusEffect extends StatusEffect {
     public static final CustomStatusEffect FINESSE = register("finesse", new CustomStatusEffect(StatusEffectCategory.BENEFICIAL, 0x9999aa));
     // moves camera in random directions, may change main-hand slot as if the scroll-wheel was used
     public static final CustomStatusEffect DRUNK = register("drunk", new Drunk(StatusEffectCategory.HARMFUL, 0x448822));
+    public static final CustomStatusEffect ELYTRA = register("elytra", new ElytraEffect(StatusEffectCategory.BENEFICIAL, 0x66bbff));
+    public static final CustomStatusEffect NO_FALL_DAMAGE = register("no_fall_damage", new NoFallDamage(StatusEffectCategory.BENEFICIAL, 0x236454));
+    public static final CustomStatusEffect REMOVE_EFFECT = RemoveEffect.getOrCreate(StatusEffects.POISON);
+
     private static CustomStatusEffect register(String id, CustomStatusEffect entry) {
         return Registry.register(Registries.STATUS_EFFECT, new Identifier(PotionConfigMod.MOD_ID, id), entry);
     }

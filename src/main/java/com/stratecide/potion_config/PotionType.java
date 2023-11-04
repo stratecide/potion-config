@@ -9,32 +9,15 @@ import java.util.Optional;
 public enum PotionType {
     Normal,
     Splash,
-    Lingering;
+    Lingering,
+    CraftIngredient;
 
-    public static PotionType from(PotionItem potion) {
+    /*public static PotionType from(PotionItem potion) {
         if (potion instanceof SplashPotionItem)
             return Splash;
         if (potion instanceof LingeringPotionItem)
             return Lingering;
         return Normal;
-    }
-
-    public static Optional<PotionType> parse(String str) {
-        switch (str) {
-            case "normal" -> {
-                return Optional.of(Normal);
-            }
-            case "splash" -> {
-                return Optional.of(Splash);
-            }
-            case "lingering" -> {
-                return Optional.of(Lingering);
-            }
-            default -> {
-                PotionConfigMod.LOGGER.warn("Unknown potion type '" + str + "'");
-                return Optional.empty();
-            }
-        }
     }
 
     public ItemStack build(Potion potion) {
@@ -44,5 +27,5 @@ public enum PotionType {
             case Lingering -> Items.LINGERING_POTION;
         };
         return PotionUtil.setPotion(new ItemStack(item), potion);
-    }
+    }*/
 }

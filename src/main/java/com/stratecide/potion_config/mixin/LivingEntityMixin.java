@@ -1,23 +1,27 @@
 package com.stratecide.potion_config.mixin;
 
-import com.google.common.collect.Maps;
 import com.stratecide.potion_config.PotionColorList;
 import com.stratecide.potion_config.PotionConfigMod;
+import com.stratecide.potion_config.blocks.floor.FloorBlock;
+import com.stratecide.potion_config.effects.AfterEffect;
 import com.stratecide.potion_config.effects.CustomStatusEffect;
 import com.stratecide.potion_config.effects.Particles;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.registry.Registries;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -39,6 +43,12 @@ public abstract class LivingEntityMixin extends Entity {
     @Shadow public abstract boolean hasStatusEffect(StatusEffect effect);
 
     @Shadow public abstract @Nullable StatusEffectInstance getStatusEffect(StatusEffect effect);
+
+    @Shadow public abstract boolean addStatusEffect(StatusEffectInstance effect);
+
+    @Shadow public abstract int getRoll();
+
+    @Shadow public abstract boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource);
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void injectPotionColorTracker(CallbackInfo ci) {
@@ -102,8 +112,64 @@ public abstract class LivingEntityMixin extends Entity {
     @Inject(method = "getJumpBoostVelocityModifier", at = @At("TAIL"), cancellable = true)
     private void reduceJumpHeight(CallbackInfoReturnable<Float> cir) {
         if (hasStatusEffect(CustomStatusEffect.JUMP_DROP)) {
-            float reduction = 0.1f * (float)(getStatusEffect(CustomStatusEffect.JUMP_DROP).getAmplifier() + 1);
+            float reduction = 0.025f * (float)(getStatusEffect(CustomStatusEffect.JUMP_DROP).getAmplifier() + 1);
             cir.setReturnValue(cir.getReturnValue() - reduction);
         }
+    }
+
+    @Inject(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isInsideWall()Z"))
+    private void handlePotionBlocks(CallbackInfo ci) {
+        if (!this.isSpectator()) {
+            BlockState state = this.world.getBlockState(this.getVelocityAffectingPos());
+            if (state.getBlock() instanceof FloorBlock) {
+                FloorBlock block = (FloorBlock) state.getBlock();
+                for (StatusEffectInstance statusEffectInstance : block.getPotion().generateEffectInstances()) {
+                    if (statusEffectInstance.getEffectType().isInstant()) {
+                        statusEffectInstance.getEffectType().applyInstantEffect(null, null, (LivingEntity) (Entity) this, statusEffectInstance.getAmplifier(), 1.0);
+                    } else {
+                        addStatusEffect(statusEffectInstance);
+                    }
+                }
+            }
+        }
+    }
+
+    @Inject(method = "tickFallFlying", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isOf(Lnet/minecraft/item/Item;)Z"), cancellable = true)
+    private void injectElytraEffect(CallbackInfo ci) {
+        if (hasStatusEffect(CustomStatusEffect.ELYTRA)) {
+            if (!this.world.isClient && (getRoll() + 1) % 10 == 0) {
+                this.emitGameEvent(GameEvent.ELYTRA_GLIDE);
+            }
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "handleFallDamage", at = @At("HEAD"), cancellable = true)
+    private void injectNoFallDamageEffect(float fallDistance, float damageMultiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
+        if (fallDistance > 0.f && damageSource == DamageSource.FALL && hasStatusEffect(CustomStatusEffect.NO_FALL_DAMAGE)) {
+            cir.setReturnValue(handleFallDamage(0.f, damageMultiplier, damageSource));
+        }
+    }
+
+    @Inject(method = "getStatusEffects", at = @At("HEAD"), cancellable = true)
+    private void hideAfterEffects(CallbackInfoReturnable<Collection<StatusEffectInstance>> cir) {
+        // hacky, but redirecting in AbstractInventoryScreen causes collision with REI
+        if (PotionConfigMod.HIDE_AFTER_EFFECTS_DISPLAY) {
+            PotionConfigMod.HIDE_AFTER_EFFECTS_DISPLAY = false;
+            cir.setReturnValue(getActiveStatusEffects().values()
+                .stream()
+                .filter(effectInstance -> {
+                    StatusEffect effect = effectInstance.getEffectType();
+                    return !(effect instanceof AfterEffect) && !(effect instanceof Particles);
+                }).collect(Collectors.toList()));
+        }
+    }
+
+    @ModifyConstant(method = "travel", constant = @Constant(doubleValue = 0.01))
+    private double improveSlowFalling(double d) {
+        if (this.isSneaking())
+            return 0.04;
+        else
+            return d;
     }
 }
