@@ -62,6 +62,9 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             }
             StatusEffectInstance oldInstance = getStatusEffect(CustomStatusEffect.ELYTRA);
             StatusEffectInstance instance = new StatusEffectInstance(CustomStatusEffect.ELYTRA, oldInstance.getDuration(), oldInstance.getAmplifier() - 1, oldInstance.isAmbient(), oldInstance.shouldShowParticles(), oldInstance.shouldShowIcon());
+            if (oldInstance.hiddenEffect != null) {
+                instance.upgrade(oldInstance.hiddenEffect);
+            }
             setStatusEffect(instance, this);
             cir.setReturnValue(true);
         }

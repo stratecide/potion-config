@@ -1,3 +1,4 @@
 accessWidener v1 named
 accessible class net/minecraft/recipe/BrewingRecipeRegistry$Recipe
 accessible class net/minecraft/screen/BrewingStandScreenHandler$PotionSlot
+accessible field net/minecraft/entity/effect/StatusEffectInstance hiddenEffect Lnet/minecraft/entity/effect/StatusEffectInstance;
